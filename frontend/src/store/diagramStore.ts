@@ -1,0 +1,85 @@
+import { create } from 'zustand';
+import {
+  applyNodeChanges,
+  applyEdgeChanges,
+  addEdge,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type OnConnect,
+  type XYPosition,
+} from '@xyflow/react';
+import type { DiagramNode, DiagramEdge } from '../types/diagram';
+import type { BlockType, BlockData } from '../types/blocks';
+import {
+  defaultModelData,
+  defaultSimulationData,
+  defaultPlotData,
+} from '../types/blocks';
+
+function makeDefaultData(type: BlockType): BlockData {
+  switch (type) {
+    case 'model': return defaultModelData();
+    case 'simulation': return defaultSimulationData();
+    case 'plot': return defaultPlotData();
+  }
+}
+
+function newId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+interface DiagramState {
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
+  addNode: (type: BlockType, position: XYPosition) => string;
+  updateNodeData: (id: string, data: Partial<BlockData>) => void;
+  getNode: (id: string) => DiagramNode | undefined;
+  reset: () => void;
+  loadDiagram: (nodes: DiagramNode[], edges: DiagramEdge[]) => void;
+}
+
+export const useDiagramStore = create<DiagramState>((set, get) => ({
+  nodes: [],
+  edges: [],
+
+  onNodesChange: (changes) => {
+    set({ nodes: applyNodeChanges(changes, get().nodes) as DiagramNode[] });
+  },
+
+  onEdgesChange: (changes) => {
+    set({ edges: applyEdgeChanges(changes, get().edges) });
+  },
+
+  onConnect: (connection) => {
+    set({ edges: addEdge({ ...connection, animated: false }, get().edges) });
+  },
+
+  addNode: (type, position) => {
+    const id = newId();
+    const node: DiagramNode = {
+      id,
+      type,
+      position,
+      data: makeDefaultData(type),
+    };
+    set({ nodes: [...get().nodes, node] });
+    return id;
+  },
+
+  updateNodeData: (id, patch) => {
+    set({
+      nodes: get().nodes.map((n) =>
+        n.id === id ? { ...n, data: { ...n.data, ...patch } as BlockData } : n
+      ),
+    });
+  },
+
+  getNode: (id) => get().nodes.find((n) => n.id === id),
+
+  reset: () => set({ nodes: [], edges: [] }),
+
+  loadDiagram: (nodes, edges) => set({ nodes, edges }),
+}));

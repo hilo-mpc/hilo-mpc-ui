@@ -1,0 +1,29 @@
+{
+  "appId": "com.hilo-mpc.ui",
+  "productName": "HILO-MPC UI",
+  "directories": {
+    "output": "../release"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "../frontend/dist",
+      "to": "frontend"
+    },
+    {
+      "from": "../backend",
+      "to": "backend"
+    }
+  ],
+  "linux": {
+    "target": "AppImage"
+  },
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis"
+  }
+}

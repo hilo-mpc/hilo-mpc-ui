@@ -1,0 +1,17 @@
+{
+  "name": "hilo-mpc-ui",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "electron"
+  ],
+  "scripts": {
+    "dev": "concurrently -n frontend,electron -c cyan,yellow \"npm run dev --workspace=frontend\" \"npm run dev --workspace=electron\"",
+    "build": "npm run build --workspace=frontend && npm run build --workspace=electron",
+    "package": "npm run build && npm run package --workspace=electron"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
