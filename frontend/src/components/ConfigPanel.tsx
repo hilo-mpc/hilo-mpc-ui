@@ -10,8 +10,8 @@ export function ConfigPanel() {
 
   if (!selectedNodeId) {
     return (
-      <aside className="w-72 shrink-0 bg-slate-900 border-l border-slate-700 flex items-center justify-center">
-        <p className="text-xs text-slate-500 italic text-center px-4">
+      <aside className="w-72 shrink-0 bg-stone-900 border-l border-stone-700 flex items-center justify-center">
+        <p className="text-xs text-stone-500 italic text-center px-4">
           Click a block to configure it
         </p>
       </aside>
@@ -29,11 +29,11 @@ export function ConfigPanel() {
       : 'Plot Config';
 
   return (
-    <aside className="w-72 shrink-0 bg-slate-900 border-l border-slate-700 flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+    <aside className="w-72 shrink-0 bg-stone-900 border-l border-stone-700 flex flex-col overflow-hidden">
+      <div className="px-4 py-3 border-b border-stone-700 flex items-center justify-between">
         <span className="text-sm font-semibold text-white">{title}</span>
         <button
-          className="text-slate-500 hover:text-slate-300 text-lg leading-none"
+          className="text-stone-500 hover:text-stone-300 text-lg leading-none"
           onClick={() => useUIStore.getState().setSelectedNodeId(null)}
         >
           ×

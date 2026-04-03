@@ -8,20 +8,18 @@ export function StatusBar() {
   const series = useSimulationStore((s) => s.series);
 
   return (
-    <footer className="h-6 bg-slate-950 border-t border-slate-800 flex items-center px-4 gap-4 text-xs text-slate-500 shrink-0">
-      {/* Backend health */}
+    <footer className="h-6 bg-stone-950 border-t border-stone-800 flex items-center px-4 gap-4 text-xs text-stone-500 shrink-0">
       <span className="flex items-center gap-1.5">
         <span
           className={`w-1.5 h-1.5 rounded-full ${
-            health === 'ok' ? 'bg-green-400' : health === 'error' ? 'bg-red-400' : 'bg-yellow-400'
+            health === 'ok' ? 'bg-green-400' : health === 'error' ? 'bg-rose-400' : 'bg-amber-400'
           }`}
         />
         {health === 'ok' ? `Backend OK${hiloVersion ? ` · hilo-mpc ${hiloVersion}` : ''}` : 'Backend offline'}
       </span>
 
-      <span className="w-px h-3 bg-slate-800" />
+      <span className="w-px h-3 bg-stone-800" />
 
-      {/* Simulation status */}
       {simStatus !== 'idle' && (
         <span>
           {simStatus === 'running' && `${series.length} steps…`}

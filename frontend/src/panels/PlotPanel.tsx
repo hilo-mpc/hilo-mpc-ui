@@ -49,21 +49,21 @@ export function PlotPanel({ nodeId }: Props) {
   }
 
   return (
-    <div className="p-4 space-y-5 text-sm text-slate-200">
+    <div className="p-4 space-y-5 text-sm text-stone-200">
       {/* Label */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Block label</label>
+        <label className="block text-xs text-stone-400 mb-1">Block label</label>
         <input
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+          className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
           value={data.label}
           onChange={(e) => patch({ label: e.target.value })}
         />
       </div>
 
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Chart title</label>
+        <label className="block text-xs text-stone-400 mb-1">Chart title</label>
         <input
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+          className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
           value={data.title}
           onChange={(e) => patch({ title: e.target.value })}
         />
@@ -71,11 +71,11 @@ export function PlotPanel({ nodeId }: Props) {
 
       {/* Y-axis variable selector */}
       <section>
-        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
           Variables to plot
         </span>
         {availableVars.length === 0 ? (
-          <p className="mt-1 text-xs text-slate-500 italic">
+          <p className="mt-1 text-xs text-stone-500 italic">
             Connect a Model → Simulation → this Plot block to see available variables.
           </p>
         ) : (
@@ -88,8 +88,8 @@ export function PlotPanel({ nodeId }: Props) {
                   onClick={() => toggleAxis(name)}
                   className={`px-3 py-1 rounded text-xs font-mono border transition-colors ${
                     active
-                      ? 'bg-violet-700 border-violet-500 text-white'
-                      : 'bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-400'
+                      ? 'bg-orange-700 border-orange-500 text-white'
+                      : 'bg-stone-700 border-stone-600 text-stone-400 hover:border-stone-400'
                   }`}
                 >
                   {name}
@@ -103,7 +103,7 @@ export function PlotPanel({ nodeId }: Props) {
       {/* Live chart preview */}
       {series.length > 0 && data.yAxes.length > 0 && (
         <section>
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
             Preview
           </span>
           <div className="mt-2">

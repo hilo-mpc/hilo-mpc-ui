@@ -1,35 +1,58 @@
 import { useSimulationStore } from '../store/simulationStore';
 import { useDiagramStore } from '../store/diagramStore';
+import { useProjectStore } from '../store/projectStore';
 import { useSimulation } from '../hooks/useSimulation';
 import { useDiagramPersist } from '../hooks/useDiagramPersist';
 
-export function Toolbar() {
+interface Props {
+  projectName: string;
+  onBack: () => void;
+}
+
+export function Toolbar({ projectName, onBack }: Props) {
   const status = useSimulationStore((s) => s.status);
   const error = useSimulationStore((s) => s.error);
   const nodes = useDiagramStore((s) => s.nodes);
+  const { currentProjectId, saveDiagram } = useProjectStore();
 
-  // Find the simulation node (there should be one per diagram for Stage 1)
   const simNode = nodes.find((n) => n.data.blockType === 'simulation');
   const { run, stop } = useSimulation(simNode?.id ?? '');
-  const { save, load } = useDiagramPersist();
+  const { exportFile, importFile } = useDiagramPersist();
 
   const isRunning = status === 'running';
   const canRun = !!simNode && !isRunning;
 
+  function handleSave() {
+    if (!currentProjectId) return;
+    const { nodes, edges } = useDiagramStore.getState();
+    saveDiagram(currentProjectId, nodes, edges);
+  }
+
   return (
-    <header className="h-12 bg-slate-900 border-b border-slate-700 flex items-center px-4 gap-3 shrink-0">
-      {/* Logo */}
-      <span className="text-white font-bold text-sm tracking-tight mr-2">
-        HILO<span className="text-blue-400">-MPC</span> UI
+    <header className="h-12 bg-stone-900 border-b border-stone-700 flex items-center px-4 gap-3 shrink-0">
+      {/* Back to projects */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1 text-stone-400 hover:text-stone-100 text-xs transition-colors"
+        title="Save and go back to projects"
+      >
+        ← Projects
+      </button>
+
+      <div className="w-px h-6 bg-stone-700" />
+
+      {/* Project name */}
+      <span className="text-stone-300 text-sm font-medium truncate max-w-[160px]" title={projectName}>
+        {projectName}
       </span>
 
-      <div className="w-px h-6 bg-slate-700" />
+      <div className="w-px h-6 bg-stone-700" />
 
       {/* Run / Stop */}
       {isRunning ? (
         <button
           onClick={stop}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-red-700 hover:bg-red-600 text-white transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-rose-700 hover:bg-rose-600 text-white transition-colors"
         >
           <span className="w-2 h-2 rounded-sm bg-white inline-block" />
           Stop
@@ -40,8 +63,8 @@ export function Toolbar() {
           disabled={!canRun}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
             canRun
-              ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
-              : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+              ? 'bg-amber-700 hover:bg-amber-600 text-white'
+              : 'bg-stone-700 text-stone-500 cursor-not-allowed'
           }`}
           title={!simNode ? 'Add a Simulation block first' : 'Run simulation'}
         >
@@ -52,31 +75,44 @@ export function Toolbar() {
 
       {/* Status indicator */}
       {status === 'running' && (
-        <span className="text-xs text-emerald-400 animate-pulse">Simulating…</span>
+        <span className="text-xs text-amber-400 animate-pulse">Simulating…</span>
       )}
       {status === 'completed' && (
-        <span className="text-xs text-emerald-400">Done</span>
+        <span className="text-xs text-amber-400">Done</span>
       )}
       {status === 'failed' && (
-        <span className="text-xs text-red-400">
+        <span className="text-xs text-rose-400">
           Error: {error?.slice(0, 60)}
         </span>
       )}
 
       <div className="flex-1" />
 
-      {/* Save / Load */}
+      {/* Save to project */}
       <button
-        onClick={load}
-        className="px-2.5 py-1.5 rounded text-xs text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-      >
-        Open
-      </button>
-      <button
-        onClick={save}
-        className="px-2.5 py-1.5 rounded text-xs text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+        onClick={handleSave}
+        className="px-2.5 py-1.5 rounded text-xs text-stone-300 hover:text-white hover:bg-stone-700 transition-colors"
+        title="Save to project"
       >
         Save
+      </button>
+
+      <div className="w-px h-6 bg-stone-700" />
+
+      {/* File import / export */}
+      <button
+        onClick={importFile}
+        className="px-2.5 py-1.5 rounded text-xs text-stone-500 hover:text-stone-300 hover:bg-stone-700 transition-colors"
+        title="Import .hilo file"
+      >
+        Import
+      </button>
+      <button
+        onClick={exportFile}
+        className="px-2.5 py-1.5 rounded text-xs text-stone-500 hover:text-stone-300 hover:bg-stone-700 transition-colors"
+        title="Export .hilo file"
+      >
+        Export
       </button>
     </header>
   );

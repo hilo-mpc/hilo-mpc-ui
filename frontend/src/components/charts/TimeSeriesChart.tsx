@@ -11,13 +11,13 @@ import {
 import type { TimeSeriesPoint } from '../../types/simulation';
 
 const COLORS = [
-  '#60a5fa', // blue-400
-  '#34d399', // emerald-400
-  '#f472b6', // pink-400
+  '#fb7185', // rose-400
+  '#fbbf24', // amber-400
   '#fb923c', // orange-400
-  '#a78bfa', // violet-400
-  '#facc15', // yellow-400
-  '#2dd4bf', // teal-400
+  '#fda4af', // rose-300
+  '#fcd34d', // amber-300
+  '#fdba74', // orange-300
+  '#f9a8d4', // pink-300
 ];
 
 interface Props {
@@ -27,31 +27,30 @@ interface Props {
 }
 
 export function TimeSeriesChart({ series, yAxes, height = 200 }: Props) {
-  // Recharts expects flat objects: { t, x, v, ... }
   const data = series.map((pt) => ({ t: pt.t, ...pt.values }));
 
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#44403c" />
         <XAxis
           dataKey="t"
-          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tick={{ fontSize: 10, fill: '#a8a29e' }}
           tickLine={false}
-          axisLine={{ stroke: '#475569' }}
-          label={{ value: 't (s)', position: 'insideRight', offset: -4, fill: '#94a3b8', fontSize: 10 }}
+          axisLine={{ stroke: '#57534e' }}
+          label={{ value: 't (s)', position: 'insideRight', offset: -4, fill: '#a8a29e', fontSize: 10 }}
         />
         <YAxis
-          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tick={{ fontSize: 10, fill: '#a8a29e' }}
           tickLine={false}
-          axisLine={{ stroke: '#475569' }}
+          axisLine={{ stroke: '#57534e' }}
           width={32}
         />
         <Tooltip
-          contentStyle={{ background: '#1e293b', border: '1px solid #334155', fontSize: 11 }}
-          labelStyle={{ color: '#94a3b8' }}
+          contentStyle={{ background: '#292524', border: '1px solid #44403c', fontSize: 11 }}
+          labelStyle={{ color: '#a8a29e' }}
         />
-        {yAxes.length > 1 && <Legend wrapperStyle={{ fontSize: 10, color: '#94a3b8' }} />}
+        {yAxes.length > 1 && <Legend wrapperStyle={{ fontSize: 10, color: '#a8a29e' }} />}
         {yAxes.map((key, i) => (
           <Line
             key={key}

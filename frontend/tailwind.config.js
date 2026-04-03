@@ -5,9 +5,9 @@ export default {
     extend: {
       colors: {
         surface: {
-          DEFAULT: '#0f172a',
-          raised: '#1e293b',
-          border: '#334155',
+          DEFAULT: '#0c0a09',
+          raised: '#1c1917',
+          border: '#44403c',
         },
       },
       fontFamily: {

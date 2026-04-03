@@ -80,12 +80,12 @@ export function ModelPanel({ nodeId }: Props) {
   }
 
   return (
-    <div className="p-4 space-y-5 text-sm text-slate-200">
+    <div className="p-4 space-y-5 text-sm text-stone-200">
       {/* Label */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Block label</label>
+        <label className="block text-xs text-stone-400 mb-1">Block label</label>
         <input
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+          className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-sm text-white"
           value={data.label}
           onChange={(e) => patch({ label: e.target.value })}
         />
@@ -94,9 +94,9 @@ export function ModelPanel({ nodeId }: Props) {
       {/* Parameters */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Parameters (p)</span>
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">Parameters (p)</span>
           <button
-            className="text-xs text-blue-400 hover:text-blue-300"
+            className="text-xs text-rose-400 hover:text-rose-300"
             onClick={() => setParameters([...data.parameters, newParam()])}
           >
             + Add
@@ -104,7 +104,7 @@ export function ModelPanel({ nodeId }: Props) {
         </div>
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-slate-500">
+            <tr className="text-stone-500">
               <th className="text-left pb-1 w-1/2">Name</th>
               <th className="text-left pb-1">Value</th>
               <th className="pb-1 w-6" />
@@ -115,7 +115,7 @@ export function ModelPanel({ nodeId }: Props) {
               <tr key={i} className="group">
                 <td className="pr-1 pb-1">
                   <input
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white"
                     placeholder="g"
                     value={p.name}
                     onChange={(e) => {
@@ -129,7 +129,7 @@ export function ModelPanel({ nodeId }: Props) {
                 <td className="pr-1 pb-1">
                   <input
                     type="number"
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white font-mono"
+                    className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white font-mono"
                     placeholder="0"
                     value={p.value}
                     onChange={(e) => {
@@ -142,7 +142,7 @@ export function ModelPanel({ nodeId }: Props) {
                 </td>
                 <td className="pb-1 text-center">
                   <button
-                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400"
+                    className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400"
                     onClick={() => setParameters(data.parameters.filter((_, j) => j !== i))}
                   >
                     ×
@@ -153,16 +153,16 @@ export function ModelPanel({ nodeId }: Props) {
           </tbody>
         </table>
         {data.parameters.length === 0 && (
-          <p className="text-slate-500 italic text-xs">No parameters — click "+ Add"</p>
+          <p className="text-stone-500 italic text-xs">No parameters — click "+ Add"</p>
         )}
       </section>
 
       {/* Inputs */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Inputs (u)</span>
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">Inputs (u)</span>
           <button
-            className="text-xs text-blue-400 hover:text-blue-300"
+            className="text-xs text-rose-400 hover:text-rose-300"
             onClick={() => setInputs([...data.inputs, newVar()])}
           >
             + Add
@@ -170,7 +170,7 @@ export function ModelPanel({ nodeId }: Props) {
         </div>
         <div className="flex flex-wrap gap-1">
           {data.inputs.map((inp, i) => (
-            <div key={i} className="flex items-center gap-1 bg-slate-700 rounded px-2 py-0.5">
+            <div key={i} className="flex items-center gap-1 bg-stone-700 rounded px-2 py-0.5">
               <input
                 className="bg-transparent text-white w-16 text-xs focus:outline-none"
                 placeholder="u"
@@ -183,7 +183,7 @@ export function ModelPanel({ nodeId }: Props) {
                 }}
               />
               <button
-                className="text-slate-500 hover:text-red-400 text-xs"
+                className="text-stone-500 hover:text-rose-400 text-xs"
                 onClick={() => setInputs(data.inputs.filter((_, j) => j !== i))}
               >
                 ×
@@ -191,7 +191,7 @@ export function ModelPanel({ nodeId }: Props) {
             </div>
           ))}
           {data.inputs.length === 0 && (
-            <span className="text-slate-500 italic text-xs">No inputs</span>
+            <span className="text-stone-500 italic text-xs">No inputs</span>
           )}
         </div>
       </section>
@@ -199,9 +199,9 @@ export function ModelPanel({ nodeId }: Props) {
       {/* States */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">States (x)</span>
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">States (x)</span>
           <button
-            className="text-xs text-blue-400 hover:text-blue-300"
+            className="text-xs text-rose-400 hover:text-rose-300"
             onClick={() => setStates([...data.states, newVar()])}
           >
             + Add
@@ -209,7 +209,7 @@ export function ModelPanel({ nodeId }: Props) {
         </div>
         <table className="w-full text-xs">
           <thead>
-            <tr className="text-slate-500">
+            <tr className="text-stone-500">
               <th className="text-left pb-1 w-1/3">Name</th>
               <th className="text-left pb-1">ẋ = f(x, u, p)</th>
               <th className="pb-1 w-6" />
@@ -220,7 +220,7 @@ export function ModelPanel({ nodeId }: Props) {
               <tr key={i} className="group">
                 <td className="pr-1 pb-1">
                   <input
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white"
                     placeholder="x"
                     value={s.name}
                     onChange={(e) => {
@@ -233,7 +233,7 @@ export function ModelPanel({ nodeId }: Props) {
                 </td>
                 <td className="pr-1 pb-1">
                   <input
-                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white font-mono"
+                    className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white font-mono"
                     placeholder="v"
                     value={data.odeExpressions[i] ?? ''}
                     onChange={(e) => setOde(i, e.target.value)}
@@ -241,7 +241,7 @@ export function ModelPanel({ nodeId }: Props) {
                 </td>
                 <td className="pb-1 text-center">
                   <button
-                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400"
+                    className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400"
                     onClick={() => {
                       const states = data.states.filter((_, j) => j !== i);
                       setStates(states);
@@ -255,7 +255,7 @@ export function ModelPanel({ nodeId }: Props) {
           </tbody>
         </table>
         {data.states.length === 0 && (
-          <p className="text-slate-500 italic text-xs">No states — click "+ Add"</p>
+          <p className="text-stone-500 italic text-xs">No states — click "+ Add"</p>
         )}
       </section>
 
@@ -264,7 +264,7 @@ export function ModelPanel({ nodeId }: Props) {
         <p className="text-xs text-green-400">✓ Equations look valid</p>
       )}
       {validationOk === false && validationMsg && (
-        <p className="text-xs text-red-400">✗ {validationMsg}</p>
+        <p className="text-xs text-rose-400">✗ {validationMsg}</p>
       )}
     </div>
   );
