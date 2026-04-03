@@ -15,17 +15,18 @@ import { useUIStore } from '../store/uiStore';
 import { nodeTypes } from '../nodes';
 import type { BlockType } from '../types/blocks';
 
-const VALID_CONNECTIONS: Record<string, string> = {
-  'sim-model-in': 'model-out',
-  'plot-data-in': 'sim-results-out',
+const VALID_CONNECTIONS: Record<string, string[]> = {
+  'sim-model-in': ['model-out'],
+  'mpc-model-in': ['model-out'],
+  'plot-data-in': ['sim-results-out', 'mpc-results-out'],
 };
 
 const isValidConnection: IsValidConnection = (connection: Connection) => {
   const targetHandle = connection.targetHandle;
   if (!targetHandle) return true;
-  const requiredSource = VALID_CONNECTIONS[targetHandle];
-  if (!requiredSource) return true;
-  return connection.sourceHandle === requiredSource;
+  const validSources = VALID_CONNECTIONS[targetHandle];
+  if (!validSources) return true;
+  return validSources.includes(connection.sourceHandle ?? '');
 };
 
 export function Canvas() {
@@ -78,6 +79,7 @@ export function Canvas() {
             switch (node.type) {
               case 'model': return '#9f1239';
               case 'simulation': return '#92400e';
+              case 'mpc': return '#6d28d9';
               case 'plot': return '#9a3412';
               default: return '#57534e';
             }

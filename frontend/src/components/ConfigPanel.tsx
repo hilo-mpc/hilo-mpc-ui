@@ -2,6 +2,7 @@ import { useUIStore } from '../store/uiStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { ModelPanel } from '../panels/ModelPanel';
 import { SimulationPanel } from '../panels/SimulationPanel';
+import { MpcPanel } from '../panels/MpcPanel';
 import { PlotPanel } from '../panels/PlotPanel';
 
 export function ConfigPanel() {
@@ -26,6 +27,8 @@ export function ConfigPanel() {
       ? 'Model Config'
       : node.data.blockType === 'simulation'
       ? 'Simulation Config'
+      : node.data.blockType === 'mpc'
+      ? 'MPC Config'
       : 'Plot Config';
 
   return (
@@ -42,6 +45,7 @@ export function ConfigPanel() {
       <div className="flex-1 overflow-y-auto">
         {node.data.blockType === 'model' && <ModelPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'simulation' && <SimulationPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'mpc' && <MpcPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'plot' && <PlotPanel nodeId={selectedNodeId} />}
       </div>
     </aside>

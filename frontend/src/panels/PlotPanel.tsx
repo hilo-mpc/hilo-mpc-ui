@@ -33,7 +33,12 @@ export function PlotPanel({ nodeId }: Props) {
     ? (modelNode.data as ModelBlockData)
     : null;
 
-  const availableVars = modelData?.states.map((s) => s.name) ?? [];
+  const isMpc = simNode?.data.blockType === 'mpc';
+  const availableVars = [
+    ...(modelData?.states.map((s) => s.name) ?? []),
+    // For MPC connections also expose inputs (controller outputs)
+    ...(isMpc ? (modelData?.inputs.map((i) => i.name) ?? []) : []),
+  ];
 
   function patch(partial: Partial<PlotBlockData>) {
     const next = { ...data, ...partial };

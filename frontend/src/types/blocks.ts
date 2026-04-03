@@ -1,4 +1,4 @@
-export type BlockType = 'model' | 'simulation' | 'plot';
+export type BlockType = 'model' | 'simulation' | 'mpc' | 'plot';
 
 export interface Variable {
   name: string;
@@ -47,6 +47,26 @@ export interface SimulationBlockData {
   configured: boolean;
 }
 
+// ── MPC ───────────────────────────────────────────────────────────────────────
+
+export interface MpcBlockData {
+  blockType: 'mpc';
+  label: string;
+  horizon: number;
+  dt: number;
+  tEnd: number;
+  initialConditions: Record<string, number>;
+  stateWeights: Record<string, number>;    // diagonal Q
+  inputWeights: Record<string, number>;    // diagonal R
+  stateRef: Record<string, number>;        // state setpoint
+  inputRef: Record<string, number>;        // input setpoint
+  stateLb: Record<string, number | null>;
+  stateUb: Record<string, number | null>;
+  inputLb: Record<string, number | null>;
+  inputUb: Record<string, number | null>;
+  configured: boolean;
+}
+
 // ── Plot ──────────────────────────────────────────────────────────────────────
 
 export interface PlotBlockData {
@@ -60,7 +80,7 @@ export interface PlotBlockData {
 
 // ── Union ─────────────────────────────────────────────────────────────────────
 
-export type BlockData = ModelBlockData | SimulationBlockData | PlotBlockData;
+export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlotBlockData;
 
 // ── Default factories ─────────────────────────────────────────────────────────
 
@@ -85,6 +105,26 @@ export function defaultSimulationData(): SimulationBlockData {
     initialConditions: {},
     inputSchedule: [],
     solver: 'cvodes',
+    configured: false,
+  };
+}
+
+export function defaultMpcData(): MpcBlockData {
+  return {
+    blockType: 'mpc',
+    label: 'MPC',
+    horizon: 10,
+    dt: 0.1,
+    tEnd: 10,
+    initialConditions: {},
+    stateWeights: {},
+    inputWeights: {},
+    stateRef: {},
+    inputRef: {},
+    stateLb: {},
+    stateUb: {},
+    inputLb: {},
+    inputUb: {},
     configured: false,
   };
 }

@@ -13,6 +13,7 @@ import type { BlockType, BlockData } from '../types/blocks';
 import {
   defaultModelData,
   defaultSimulationData,
+  defaultMpcData,
   defaultPlotData,
 } from '../types/blocks';
 
@@ -20,6 +21,7 @@ function makeDefaultData(type: BlockType): BlockData {
   switch (type) {
     case 'model': return defaultModelData();
     case 'simulation': return defaultSimulationData();
+    case 'mpc': return defaultMpcData();
     case 'plot': return defaultPlotData();
   }
 }

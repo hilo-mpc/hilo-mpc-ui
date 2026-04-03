@@ -12,13 +12,14 @@ export class SimulationWebSocket {
   constructor(
     runId: string,
     private onFrame: (frame: WsFrame) => void,
-    private onClose: () => void
+    private onClose: () => void,
+    private wsPath: string = 'simulate'
   ) {
     this.runId = runId;
   }
 
   connect(): void {
-    const url = `${getWsBaseUrl()}/ws/simulate/${this.runId}`;
+    const url = `${getWsBaseUrl()}/ws/${this.wsPath}/${this.runId}`;
     this.ws = new WebSocket(url);
 
     this.ws.onmessage = (event) => {

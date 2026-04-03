@@ -24,6 +24,13 @@ const BLOCKS: BlockDef[] = [
     headerColor: 'bg-amber-700',
   },
   {
+    type: 'mpc',
+    label: 'MPC',
+    description: 'Nonlinear MPC closed-loop control (NMPC via IPOPT)',
+    color: 'border-violet-700 bg-stone-800 hover:border-violet-500',
+    headerColor: 'bg-violet-700',
+  },
+  {
     type: 'plot',
     label: 'Plot',
     description: 'Visualise simulation results in real-time',
@@ -64,7 +71,7 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto px-3 py-3 border-t border-stone-700">
-        <p className="text-xs text-stone-600">Stage 1 — Simulation</p>
+        <p className="text-xs text-stone-600">Stage 2 — MPC</p>
       </div>
     </aside>
   );
