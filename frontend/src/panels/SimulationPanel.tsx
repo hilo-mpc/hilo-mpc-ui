@@ -72,12 +72,12 @@ export function SimulationPanel({ nodeId }: Props) {
   }
 
   return (
-    <div className="p-4 space-y-5 text-sm text-slate-200">
+    <div className="p-4 space-y-5 text-sm text-stone-200">
       {/* Label */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Block label</label>
+        <label className="block text-xs text-stone-400 mb-1">Block label</label>
         <input
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+          className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
           value={data.label}
           onChange={(e) => patch({ label: e.target.value })}
         />
@@ -85,26 +85,26 @@ export function SimulationPanel({ nodeId }: Props) {
 
       {/* Timing */}
       <section>
-        <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Timing</span>
+        <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">Timing</span>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">dt (s)</label>
+            <label className="block text-xs text-stone-400 mb-1">dt (s)</label>
             <input
               type="number"
               step="0.001"
               min="0.001"
-              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+              className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
               value={data.dt}
               onChange={(e) => patch({ dt: parseFloat(e.target.value) || 0 })}
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">T end (s)</label>
+            <label className="block text-xs text-stone-400 mb-1">T end (s)</label>
             <input
               type="number"
               step="0.1"
               min="0"
-              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+              className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
               value={data.tEnd}
               onChange={(e) => patch({ tEnd: parseFloat(e.target.value) || 0 })}
             />
@@ -114,9 +114,9 @@ export function SimulationPanel({ nodeId }: Props) {
 
       {/* Solver */}
       <section>
-        <label className="block text-xs text-slate-400 mb-1">Integrator</label>
+        <label className="block text-xs text-stone-400 mb-1">Integrator</label>
         <select
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white"
+          className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
           value={data.solver}
           onChange={(e) => patch({ solver: e.target.value as Solver })}
         >
@@ -129,17 +129,17 @@ export function SimulationPanel({ nodeId }: Props) {
       {/* Initial conditions */}
       {stateNames.length > 0 && (
         <section>
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
             Initial Conditions
           </span>
           <div className="mt-2 space-y-1">
             {stateNames.map((name) => (
               <div key={name} className="flex items-center gap-2">
-                <label className="text-xs text-slate-400 w-16 shrink-0 font-mono">{name}(0)</label>
+                <label className="text-xs text-stone-400 w-16 shrink-0 font-mono">{name}(0)</label>
                 <input
                   type="number"
                   step="any"
-                  className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-white text-xs"
+                  className="flex-1 bg-stone-700 border border-stone-600 rounded px-2 py-0.5 text-white text-xs"
                   value={data.initialConditions[name] ?? ''}
                   onChange={(e) => setIC(name, parseFloat(e.target.value) || 0)}
                 />
@@ -149,40 +149,40 @@ export function SimulationPanel({ nodeId }: Props) {
         </section>
       )}
       {stateNames.length === 0 && (
-        <p className="text-xs text-slate-500 italic">Connect a Model block to set initial conditions.</p>
+        <p className="text-xs text-stone-500 italic">Connect a Model block to set initial conditions.</p>
       )}
 
       {/* Input schedule */}
       {inputNames.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
               Input Schedule (open-loop)
             </span>
             <button
-              className="text-xs text-emerald-400 hover:text-emerald-300"
+              className="text-xs text-amber-400 hover:text-amber-300"
               onClick={addScheduleEntry}
             >
               + Add
             </button>
           </div>
           {data.inputSchedule.length === 0 && (
-            <p className="text-xs text-slate-500 italic">
+            <p className="text-xs text-stone-500 italic">
               No schedule — inputs default to 0.
             </p>
           )}
           {data.inputSchedule.map((entry) => (
             <div
               key={entry.id}
-              className="mb-2 p-2 bg-slate-700 rounded border border-slate-600 text-xs"
+              className="mb-2 p-2 bg-stone-700 rounded border border-stone-600 text-xs"
             >
               <div className="flex gap-2 mb-1">
                 <div className="flex-1">
-                  <label className="text-slate-400">t start</label>
+                  <label className="text-stone-400">t start</label>
                   <input
                     type="number"
                     step="any"
-                    className="w-full mt-0.5 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    className="w-full mt-0.5 bg-stone-800 border border-stone-600 rounded px-1.5 py-0.5 text-white"
                     value={entry.tStart}
                     onChange={(e) =>
                       updateScheduleEntry(entry.id, 'tStart', parseFloat(e.target.value) || 0)
@@ -190,11 +190,11 @@ export function SimulationPanel({ nodeId }: Props) {
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="text-slate-400">t end</label>
+                  <label className="text-stone-400">t end</label>
                   <input
                     type="number"
                     step="any"
-                    className="w-full mt-0.5 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    className="w-full mt-0.5 bg-stone-800 border border-stone-600 rounded px-1.5 py-0.5 text-white"
                     value={entry.tEnd}
                     onChange={(e) =>
                       updateScheduleEntry(entry.id, 'tEnd', parseFloat(e.target.value) || 0)
@@ -204,11 +204,11 @@ export function SimulationPanel({ nodeId }: Props) {
               </div>
               {inputNames.map((inp) => (
                 <div key={inp} className="flex items-center gap-2 mt-1">
-                  <label className="text-slate-400 w-12 font-mono">{inp}</label>
+                  <label className="text-stone-400 w-12 font-mono">{inp}</label>
                   <input
                     type="number"
                     step="any"
-                    className="flex-1 bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    className="flex-1 bg-stone-800 border border-stone-600 rounded px-1.5 py-0.5 text-white"
                     value={entry.values[inp] ?? 0}
                     onChange={(e) =>
                       updateScheduleInputValue(entry.id, inp, parseFloat(e.target.value) || 0)
@@ -217,7 +217,7 @@ export function SimulationPanel({ nodeId }: Props) {
                 </div>
               ))}
               <button
-                className="mt-1 text-xs text-red-400 hover:text-red-300"
+                className="mt-1 text-xs text-rose-400 hover:text-rose-300"
                 onClick={() => removeScheduleEntry(entry.id)}
               >
                 Remove

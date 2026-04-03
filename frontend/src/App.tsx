@@ -41,11 +41,8 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex flex-col h-screen bg-slate-950 text-white overflow-hidden">
-        <Toolbar
-          projectName={projectName}
-          onBack={handleCloseProject}
-        />
+      <div className="flex flex-col h-screen bg-stone-950 text-white overflow-hidden">
+        <Toolbar projectName={projectName} onBack={handleCloseProject} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <Canvas />
