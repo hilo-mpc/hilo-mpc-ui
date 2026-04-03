@@ -1,7 +1,6 @@
 import { useSimulationStore } from '../store/simulationStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { useProjectStore } from '../store/projectStore';
-import { useSimulation } from '../hooks/useSimulation';
 import { useDiagramPersist } from '../hooks/useDiagramPersist';
 
 interface Props {
@@ -10,23 +9,18 @@ interface Props {
 }
 
 export function Toolbar({ projectName, onBack }: Props) {
-  const status = useSimulationStore((s) => s.status);
-  const error = useSimulationStore((s) => s.error);
-  const nodes = useDiagramStore((s) => s.nodes);
   const { currentProjectId, saveDiagram } = useProjectStore();
-
-  const simNode = nodes.find((n) => n.data.blockType === 'simulation');
-  const { run, stop } = useSimulation(simNode?.id ?? '');
+  const queue = useSimulationStore((s) => s.queue);
+  const activeNodeId = useSimulationStore((s) => s.activeNodeId);
   const { exportFile, importFile } = useDiagramPersist();
-
-  const isRunning = status === 'running';
-  const canRun = !!simNode && !isRunning;
 
   function handleSave() {
     if (!currentProjectId) return;
     const { nodes, edges } = useDiagramStore.getState();
     saveDiagram(currentProjectId, nodes, edges);
   }
+
+  const runningCount = activeNodeId ? 1 + queue.length : 0;
 
   return (
     <header className="h-12 bg-stone-900 border-b border-stone-700 flex items-center px-4 gap-3 shrink-0">
@@ -46,44 +40,14 @@ export function Toolbar({ projectName, onBack }: Props) {
         {projectName}
       </span>
 
-      <div className="w-px h-6 bg-stone-700" />
-
-      {/* Run / Stop */}
-      {isRunning ? (
-        <button
-          onClick={stop}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold bg-rose-700 hover:bg-rose-600 text-white transition-colors"
-        >
-          <span className="w-2 h-2 rounded-sm bg-white inline-block" />
-          Stop
-        </button>
-      ) : (
-        <button
-          onClick={run}
-          disabled={!canRun}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors ${
-            canRun
-              ? 'bg-amber-700 hover:bg-amber-600 text-white'
-              : 'bg-stone-700 text-stone-500 cursor-not-allowed'
-          }`}
-          title={!simNode ? 'Add a Simulation block first' : 'Run simulation'}
-        >
-          <span className="w-0 h-0 border-y-4 border-y-transparent border-l-6 border-l-white inline-block" />
-          Run
-        </button>
-      )}
-
-      {/* Status indicator */}
-      {status === 'running' && (
-        <span className="text-xs text-amber-400 animate-pulse">Simulating…</span>
-      )}
-      {status === 'completed' && (
-        <span className="text-xs text-amber-400">Done</span>
-      )}
-      {status === 'failed' && (
-        <span className="text-xs text-rose-400">
-          Error: {error?.slice(0, 60)}
-        </span>
+      {/* Queue indicator */}
+      {runningCount > 0 && (
+        <>
+          <div className="w-px h-6 bg-stone-700" />
+          <span className="text-xs text-amber-400 animate-pulse">
+            {runningCount === 1 ? '1 simulation running' : `${runningCount} simulations running`}
+          </span>
+        </>
       )}
 
       <div className="flex-1" />

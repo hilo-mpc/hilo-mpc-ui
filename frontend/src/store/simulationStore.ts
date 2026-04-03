@@ -1,39 +1,102 @@
 import { create } from 'zustand';
-import type { TimeSeriesPoint, RunStatus } from '../types/simulation';
+import type { TimeSeriesPoint, SimRun } from '../types/simulation';
 
-interface SimulationState {
-  status: RunStatus;
-  runId: string | null;
-  series: TimeSeriesPoint[];
-  error: string | null;
-  elapsedSeconds: number | null;
+function defaultRun(): SimRun {
+  return { status: 'idle', runId: null, series: [], error: null, elapsedSeconds: null };
+}
 
-  startRun: (runId: string) => void;
-  appendPoint: (point: TimeSeriesPoint) => void;
-  completeRun: (elapsed: number) => void;
-  failRun: (error: string) => void;
+interface SimulationStore {
+  runs: Record<string, SimRun>;  // nodeId → run state
+  activeNodeId: string | null;   // node currently executing
+  queue: string[];               // nodeIds waiting (in order)
+
+  enqueue: (nodeId: string) => void;
+  setRunId: (nodeId: string, runId: string) => void;
+  appendPoint: (nodeId: string, point: TimeSeriesPoint) => void;
+  completeRun: (nodeId: string, elapsed: number) => void;
+  failRun: (nodeId: string, error: string) => void;
+  cancelQueued: (nodeId: string) => void;
   reset: () => void;
 }
 
-export const useSimulationStore = create<SimulationState>((set) => ({
-  status: 'idle',
-  runId: null,
-  series: [],
-  error: null,
-  elapsedSeconds: null,
+export const useSimulationStore = create<SimulationStore>((set, get) => {
+  function advance() {
+    const { queue } = get();
+    const [next, ...rest] = queue;
+    if (next) {
+      set((s) => ({
+        activeNodeId: next,
+        queue: rest,
+        runs: { ...s.runs, [next]: { ...defaultRun(), status: 'running' } },
+      }));
+    } else {
+      set({ activeNodeId: null, queue: [] });
+    }
+  }
 
-  startRun: (runId) =>
-    set({ status: 'running', runId, series: [], error: null, elapsedSeconds: null }),
+  return {
+    runs: {},
+    activeNodeId: null,
+    queue: [],
 
-  appendPoint: (point) =>
-    set((s) => ({ series: [...s.series, point] })),
+    enqueue: (nodeId) =>
+      set((s) => {
+        const existing = s.runs[nodeId];
+        if (existing?.status === 'queued' || existing?.status === 'running') return s;
 
-  completeRun: (elapsed) =>
-    set({ status: 'completed', elapsedSeconds: elapsed }),
+        if (s.activeNodeId === null) {
+          // Nothing running — start immediately
+          return {
+            activeNodeId: nodeId,
+            runs: { ...s.runs, [nodeId]: { ...defaultRun(), status: 'running' } },
+          };
+        }
+        // Something already running — queue it
+        return {
+          queue: [...s.queue, nodeId],
+          runs: { ...s.runs, [nodeId]: { ...defaultRun(), status: 'queued' } },
+        };
+      }),
 
-  failRun: (error) =>
-    set({ status: 'failed', error }),
+    setRunId: (nodeId, runId) =>
+      set((s) => ({
+        runs: { ...s.runs, [nodeId]: { ...s.runs[nodeId], runId } },
+      })),
 
-  reset: () =>
-    set({ status: 'idle', runId: null, series: [], error: null, elapsedSeconds: null }),
-}));
+    appendPoint: (nodeId, point) =>
+      set((s) => ({
+        runs: {
+          ...s.runs,
+          [nodeId]: { ...s.runs[nodeId], series: [...(s.runs[nodeId]?.series ?? []), point] },
+        },
+      })),
+
+    completeRun: (nodeId, elapsed) => {
+      set((s) => ({
+        runs: {
+          ...s.runs,
+          [nodeId]: { ...s.runs[nodeId], status: 'completed', elapsedSeconds: elapsed },
+        },
+      }));
+      advance();
+    },
+
+    failRun: (nodeId, error) => {
+      set((s) => ({
+        runs: {
+          ...s.runs,
+          [nodeId]: { ...s.runs[nodeId], status: 'failed', error },
+        },
+      }));
+      advance();
+    },
+
+    cancelQueued: (nodeId) =>
+      set((s) => ({
+        queue: s.queue.filter((id) => id !== nodeId),
+        runs: { ...s.runs, [nodeId]: defaultRun() },
+      })),
+
+    reset: () => set({ runs: {}, activeNodeId: null, queue: [] }),
+  };
+});

@@ -1,7 +1,7 @@
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
-import type { PlotBlockData, SimulationBlockData, ModelBlockData } from '../types/blocks';
+import type { PlotBlockData, ModelBlockData } from '../types/blocks';
 
 interface Props {
   nodeId: string;
@@ -11,7 +11,6 @@ export function PlotPanel({ nodeId }: Props) {
   const nodes = useDiagramStore((s) => s.nodes);
   const edges = useDiagramStore((s) => s.edges);
   const { getNode, updateNodeData } = useDiagramStore();
-  const series = useSimulationStore((s) => s.series);
   const node = getNode(nodeId);
   if (!node || node.data.blockType !== 'plot') return null;
   const data = node.data as PlotBlockData;
@@ -21,9 +20,10 @@ export function PlotPanel({ nodeId }: Props) {
     (e) => e.target === nodeId && e.targetHandle === 'plot-data-in'
   );
   const simNode = simEdge ? nodes.find((n) => n.id === simEdge.source) : undefined;
-  const simData = simNode?.data.blockType === 'simulation'
-    ? (simNode.data as SimulationBlockData)
-    : null;
+  const simNodeId = simNode?.id ?? null;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const series = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.series ?? []) : []));
 
   const modelEdge = simNode
     ? edges.find((e) => e.target === simNode.id && e.targetHandle === 'sim-model-in')

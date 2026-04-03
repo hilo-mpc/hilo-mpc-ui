@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
 import { buildSimulateRequest, postSimulate, deleteSimulate } from '../api/simulation';
@@ -31,71 +31,95 @@ function findConnectedPlots(
     .map((n) => n!.data as PlotBlockData);
 }
 
-export function useSimulation(simNodeId: string) {
+export function useSimulation(nodeId: string) {
   const wsRef = useRef<SimulationWebSocket | null>(null);
-  const { nodes, edges } = useDiagramStore.getState();
-  const simStore = useSimulationStore.getState();
+  const startedRef = useRef(false);
+  const activeNodeId = useSimulationStore((s) => s.activeNodeId);
 
-  const run = useCallback(async () => {
-    const { nodes, edges } = useDiagramStore.getState();
-    const simNode = nodes.find((n) => n.id === simNodeId);
-    if (!simNode || simNode.data.blockType !== 'simulation') return;
-
-    const simData = simNode.data as SimulationBlockData;
-    const modelData = findConnectedModel(simNodeId, nodes, edges);
-    const plotData = findConnectedPlots(simNodeId, nodes, edges);
-
-    if (!modelData) {
-      useSimulationStore.getState().failRun('No Model block connected to Simulation block.');
+  // Reactive: when it's this node's turn, start the simulation
+  useEffect(() => {
+    if (activeNodeId !== nodeId) {
+      startedRef.current = false;
       return;
     }
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-    const req = buildSimulateRequest(
-      simNodeId,
-      modelData,
-      simData,
-      plotData
-    );
-
-    let runId: string;
-    try {
-      runId = await postSimulate(req);
-    } catch (err: any) {
-      useSimulationStore.getState().failRun(err?.message ?? 'Failed to start simulation');
-      return;
-    }
-
-    useSimulationStore.getState().startRun(runId);
-
-    wsRef.current?.close();
-    wsRef.current = new SimulationWebSocket(
-      runId,
-      (frame) => {
-        if (frame.type === 'step') {
-          useSimulationStore.getState().appendPoint({ t: frame.t, values: frame.values });
-        } else if (frame.type === 'complete') {
-          useSimulationStore.getState().completeRun(frame.elapsed_seconds);
-        } else if (frame.type === 'error') {
-          useSimulationStore.getState().failRun(frame.message);
-        }
-      },
-      () => {
-        // WebSocket closed
+    async function start() {
+      const { nodes, edges } = useDiagramStore.getState();
+      const simNode = nodes.find((n) => n.id === nodeId);
+      if (!simNode || simNode.data.blockType !== 'simulation') {
+        useSimulationStore.getState().failRun(nodeId, 'Simulation block not found.');
+        return;
       }
-    );
-    wsRef.current.connect();
-  }, [simNodeId]);
 
-  const stop = useCallback(async () => {
-    const { runId } = useSimulationStore.getState();
-    if (runId) {
-      wsRef.current?.close();
+      const simData = simNode.data as SimulationBlockData;
+      const modelData = findConnectedModel(nodeId, nodes, edges);
+      const plotData = findConnectedPlots(nodeId, nodes, edges);
+
+      if (!modelData) {
+        useSimulationStore.getState().failRun(nodeId, 'No Model block connected.');
+        return;
+      }
+
+      const req = buildSimulateRequest(nodeId, modelData, simData, plotData);
+
+      let runId: string;
       try {
-        await deleteSimulate(runId);
-      } catch {}
-      useSimulationStore.getState().failRun('Stopped by user');
+        runId = await postSimulate(req);
+      } catch (err: any) {
+        useSimulationStore.getState().failRun(nodeId, err?.message ?? 'Failed to start simulation.');
+        return;
+      }
+
+      useSimulationStore.getState().setRunId(nodeId, runId);
+
+      wsRef.current?.close();
+      wsRef.current = new SimulationWebSocket(
+        runId,
+        (frame) => {
+          if (frame.type === 'step') {
+            useSimulationStore.getState().appendPoint(nodeId, { t: frame.t, values: frame.values });
+          } else if (frame.type === 'complete') {
+            useSimulationStore.getState().completeRun(nodeId, frame.elapsed_seconds);
+          } else if (frame.type === 'error') {
+            useSimulationStore.getState().failRun(nodeId, frame.message);
+          }
+        },
+        () => {}
+      );
+      wsRef.current.connect();
     }
+
+    start();
+  }, [activeNodeId, nodeId]);
+
+  // Clean up WS on unmount
+  useEffect(() => {
+    return () => { wsRef.current?.close(); };
   }, []);
 
-  return { run, stop };
+  const run = useCallback(() => {
+    useSimulationStore.getState().enqueue(nodeId);
+  }, [nodeId]);
+
+  const stop = useCallback(async () => {
+    const store = useSimulationStore.getState();
+    const runState = store.runs[nodeId];
+
+    if (runState?.status === 'queued') {
+      store.cancelQueued(nodeId);
+      return;
+    }
+
+    wsRef.current?.close();
+    if (runState?.runId) {
+      try { await deleteSimulate(runState.runId); } catch {}
+    }
+    store.failRun(nodeId, 'Cancelled by user');
+  }, [nodeId]);
+
+  const runState = useSimulationStore((s) => s.runs[nodeId]);
+
+  return { run, stop, runState };
 }

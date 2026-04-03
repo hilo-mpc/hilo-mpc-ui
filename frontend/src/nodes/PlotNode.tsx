@@ -1,11 +1,19 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../store/simulationStore';
+import { useDiagramStore } from '../store/diagramStore';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import type { PlotBlockData } from '../types/blocks';
 
-export function PlotNode({ data, selected }: NodeProps<PlotBlockData>) {
-  const series = useSimulationStore((s) => s.series);
-  const status = useSimulationStore((s) => s.status);
+export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
+  const edges = useDiagramStore((s) => s.edges);
+
+  // Find the simulation node connected to this plot
+  const simEdge = edges.find((e) => e.target === id && e.targetHandle === 'plot-data-in');
+  const simNodeId = simEdge?.source ?? null;
+
+  const series = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.series ?? []) : []));
+  const status = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.status ?? 'idle') : 'idle'));
+
   const hasData = series.length > 0;
 
   return (

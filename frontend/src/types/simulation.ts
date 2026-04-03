@@ -3,4 +3,12 @@ export interface TimeSeriesPoint {
   values: Record<string, number>;
 }
 
-export type RunStatus = 'idle' | 'running' | 'completed' | 'failed';
+export type RunStatus = 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+
+export interface SimRun {
+  status: RunStatus;
+  runId: string | null;
+  series: TimeSeriesPoint[];
+  error: string | null;
+  elapsedSeconds: number | null;
+}
