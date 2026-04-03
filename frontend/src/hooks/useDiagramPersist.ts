@@ -10,12 +10,12 @@ function makeId(): string {
 export function useDiagramPersist() {
   const { getViewport } = useReactFlow();
 
-  const save = useCallback(async () => {
+  const exportFile = useCallback(async () => {
     const { nodes, edges } = useDiagramStore.getState();
     const schema: DiagramSchema = {
       version: '1.0',
       id: makeId(),
-      name: 'My Diagram',
+      name: 'Exported diagram',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       nodes,
@@ -24,13 +24,11 @@ export function useDiagramPersist() {
     };
     const json = JSON.stringify(schema, null, 2);
 
-    // Electron path
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
       await (window as any).electronAPI.saveFile(json);
       return;
     }
 
-    // Browser fallback: trigger download
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -40,14 +38,12 @@ export function useDiagramPersist() {
     URL.revokeObjectURL(url);
   }, [getViewport]);
 
-  const load = useCallback(async () => {
+  const importFile = useCallback(async () => {
     let json: string | null = null;
 
-    // Electron path
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
       json = await (window as any).electronAPI.openFile();
     } else {
-      // Browser fallback: file picker
       json = await new Promise<string | null>((resolve) => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -72,5 +68,5 @@ export function useDiagramPersist() {
     }
   }, []);
 
-  return { save, load };
+  return { exportFile, importFile };
 }
