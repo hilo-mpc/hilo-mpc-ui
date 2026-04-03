@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from api.models.block import Variable
+from api.models.block import Variable, Parameter
 
 router = APIRouter()
 
@@ -9,6 +9,7 @@ router = APIRouter()
 class ValidateRequest(BaseModel):
     states: list[Variable]
     inputs: list[Variable]
+    parameters: list[Parameter] = []
     ode_expressions: list[str]
 
 
@@ -37,10 +38,33 @@ async def validate_equations(req: ValidateRequest):
             block_id="validate",
             states=req.states,
             inputs=req.inputs,
-            parameters=[],
+            parameters=req.parameters,
             ode_expressions=req.ode_expressions,
         )
-        build_model(cfg)
+        model = build_model(cfg)
+        # setup() + a dry simulate() is needed to catch undefined symbols:
+        # hilo-mpc silently accepts unknown names and only errors at simulate time.
+        model.setup(dt=0.1, integrator="rk4")
+        model.set_initial_conditions(x0=[0.0] * len(req.states))
+        n_inputs = len([i for i in req.inputs if i.name.strip()])
+        param_values = [p.value for p in req.parameters if p.name.strip()]
+        try:
+            if n_inputs > 0 and param_values:
+                model.simulate(u=[0.0] * n_inputs, p=param_values)
+            elif n_inputs > 0:
+                model.simulate(u=[0.0] * n_inputs)
+            elif param_values:
+                model.simulate(p=param_values)
+            else:
+                model.simulate()
+        except RuntimeError as sim_err:
+            msg = str(sim_err)
+            if "No parameter" in msg:
+                return ValidateResponse(
+                    valid=False,
+                    error="ODE expressions contain undefined symbols. Check that all variables are declared as states, inputs, or parameters.",
+                )
+            raise
         return ValidateResponse(valid=True)
     except Exception as exc:
         return ValidateResponse(valid=False, error=str(exc))

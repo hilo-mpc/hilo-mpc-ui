@@ -26,6 +26,9 @@ export function ModelNode({ data, selected }: NodeProps<ModelBlockData>) {
         ) : (
           <div className="text-slate-500 italic">No states defined</div>
         )}
+        {data.parameters.length > 0 && (
+          <div className="text-slate-400">Params: {data.parameters.map((p) => p.name).join(', ')}</div>
+        )}
         {data.inputs.length > 0 && (
           <div className="text-slate-400">Inputs: {data.inputs.map((i) => i.name).join(', ')}</div>
         )}

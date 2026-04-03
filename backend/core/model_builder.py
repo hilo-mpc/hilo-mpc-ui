@@ -16,8 +16,9 @@ def build_model(cfg: ModelBlockConfig) -> Model:
         model.set_inputs(input_names)
 
     if cfg.parameters:
-        param_names = [p.name for p in cfg.parameters]
-        model.set_parameters(param_names)
+        param_names = [p.name for p in cfg.parameters if p.name.strip()]
+        if param_names:
+            model.set_parameters(param_names)
 
     model.set_dynamical_equations(cfg.ode_expressions)
 

@@ -26,11 +26,13 @@ def _extract_latest(model, state_names: list[str]) -> dict[str, float]:
     sol = model.solution
     for name in state_names:
         try:
-            arr = sol.get_by_id(name)
+            # get_by_name returns a (1, n_steps+1) matrix for that specific state.
+            # get_by_id returns the full (n_states, n_steps+1) matrix, which gives
+            # wrong values when flattened for multi-state models.
+            arr = sol.get_by_name(name)
             if arr is None:
                 values[name] = 0.0
                 continue
-            # CasADi DM or numpy array
             if hasattr(arr, "full"):
                 flat = np.array(arr.full()).flatten()
             else:
@@ -53,6 +55,7 @@ async def run_simulation(
 
     state_names = [s.name for s in model_cfg.states]
     n_inputs = len(model_cfg.inputs)
+    param_values = [p.value for p in model_cfg.parameters if p.name.strip()]
 
     x0 = [sim_cfg.initial_conditions.get(s, 0.0) for s in state_names]
     model.set_initial_conditions(x0=x0)
@@ -63,8 +66,12 @@ async def run_simulation(
         t_now = k * sim_cfg.dt
         u = _get_input_at(t_now, sim_cfg.input_schedule, n_inputs)
 
-        if n_inputs > 0:
+        if n_inputs > 0 and param_values:
+            model.simulate(u=u, p=param_values)
+        elif n_inputs > 0:
             model.simulate(u=u)
+        elif param_values:
+            model.simulate(p=param_values)
         else:
             model.simulate()
 

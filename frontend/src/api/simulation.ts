@@ -103,11 +103,12 @@ export async function deleteSimulate(runId: string): Promise<void> {
 export async function validateEquations(
   states: BackendVariable[],
   inputs: BackendVariable[],
+  parameters: BackendParameter[],
   odeExpressions: string[]
 ): Promise<{ valid: boolean; error?: string }> {
   const resp = await apiClient.post<{ valid: boolean; error?: string }>(
     '/validate/equations',
-    { states, inputs, ode_expressions: odeExpressions }
+    { states, inputs, parameters, ode_expressions: odeExpressions }
   );
   return resp.data;
 }

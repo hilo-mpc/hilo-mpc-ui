@@ -35,6 +35,7 @@ export function ModelPanel({ nodeId }: Props) {
   function scheduleValidation(
     states: Variable[],
     inputs: Variable[],
+    parameters: Parameter[],
     exprs: string[]
   ) {
     if (validateTimer.current) clearTimeout(validateTimer.current);
@@ -42,7 +43,12 @@ export function ModelPanel({ nodeId }: Props) {
       const filledStates = states.filter((s) => s.name.trim());
       if (filledStates.length === 0 || exprs.some((e) => !e.trim())) return;
       try {
-        const result = await validateEquations(filledStates, inputs.filter((i) => i.name.trim()), exprs);
+        const result = await validateEquations(
+          filledStates,
+          inputs.filter((i) => i.name.trim()),
+          parameters.filter((p) => p.name.trim()).map((p) => ({ name: p.name, value: p.value })),
+          exprs
+        );
         setValidationOk(result.valid);
         setValidationMsg(result.error ?? null);
       } catch {
@@ -53,20 +59,24 @@ export function ModelPanel({ nodeId }: Props) {
   }
 
   function setStates(states: Variable[]) {
-    // Keep ode expressions aligned
     const exprs = states.map((_, i) => data.odeExpressions[i] ?? '');
     patch({ states, odeExpressions: exprs });
-    scheduleValidation(states, data.inputs, exprs);
+    scheduleValidation(states, data.inputs, data.parameters, exprs);
   }
 
   function setOde(index: number, expr: string) {
     const exprs = data.odeExpressions.map((e, i) => (i === index ? expr : e));
     patch({ odeExpressions: exprs });
-    scheduleValidation(data.states, data.inputs, exprs);
+    scheduleValidation(data.states, data.inputs, data.parameters, exprs);
   }
 
   function setInputs(inputs: Variable[]) {
     patch({ inputs });
+  }
+
+  function setParameters(parameters: Parameter[]) {
+    patch({ parameters });
+    scheduleValidation(data.states, data.inputs, parameters, data.odeExpressions);
   }
 
   return (
@@ -80,6 +90,111 @@ export function ModelPanel({ nodeId }: Props) {
           onChange={(e) => patch({ label: e.target.value })}
         />
       </div>
+
+      {/* Parameters */}
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Parameters (p)</span>
+          <button
+            className="text-xs text-blue-400 hover:text-blue-300"
+            onClick={() => setParameters([...data.parameters, newParam()])}
+          >
+            + Add
+          </button>
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-slate-500">
+              <th className="text-left pb-1 w-1/2">Name</th>
+              <th className="text-left pb-1">Value</th>
+              <th className="pb-1 w-6" />
+            </tr>
+          </thead>
+          <tbody>
+            {data.parameters.map((p, i) => (
+              <tr key={i} className="group">
+                <td className="pr-1 pb-1">
+                  <input
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white"
+                    placeholder="g"
+                    value={p.name}
+                    onChange={(e) => {
+                      const parameters = data.parameters.map((par, j) =>
+                        j === i ? { ...par, name: e.target.value } : par
+                      );
+                      setParameters(parameters);
+                    }}
+                  />
+                </td>
+                <td className="pr-1 pb-1">
+                  <input
+                    type="number"
+                    className="w-full bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-white font-mono"
+                    placeholder="0"
+                    value={p.value}
+                    onChange={(e) => {
+                      const parameters = data.parameters.map((par, j) =>
+                        j === i ? { ...par, value: parseFloat(e.target.value) || 0 } : par
+                      );
+                      setParameters(parameters);
+                    }}
+                  />
+                </td>
+                <td className="pb-1 text-center">
+                  <button
+                    className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400"
+                    onClick={() => setParameters(data.parameters.filter((_, j) => j !== i))}
+                  >
+                    ×
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {data.parameters.length === 0 && (
+          <p className="text-slate-500 italic text-xs">No parameters — click "+ Add"</p>
+        )}
+      </section>
+
+      {/* Inputs */}
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Inputs (u)</span>
+          <button
+            className="text-xs text-blue-400 hover:text-blue-300"
+            onClick={() => setInputs([...data.inputs, newVar()])}
+          >
+            + Add
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {data.inputs.map((inp, i) => (
+            <div key={i} className="flex items-center gap-1 bg-slate-700 rounded px-2 py-0.5">
+              <input
+                className="bg-transparent text-white w-16 text-xs focus:outline-none"
+                placeholder="u"
+                value={inp.name}
+                onChange={(e) => {
+                  const inputs = data.inputs.map((v, j) =>
+                    j === i ? { ...v, name: e.target.value } : v
+                  );
+                  setInputs(inputs);
+                }}
+              />
+              <button
+                className="text-slate-500 hover:text-red-400 text-xs"
+                onClick={() => setInputs(data.inputs.filter((_, j) => j !== i))}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {data.inputs.length === 0 && (
+            <span className="text-slate-500 italic text-xs">No inputs</span>
+          )}
+        </div>
+      </section>
 
       {/* States */}
       <section>
@@ -96,7 +211,7 @@ export function ModelPanel({ nodeId }: Props) {
           <thead>
             <tr className="text-slate-500">
               <th className="text-left pb-1 w-1/3">Name</th>
-              <th className="text-left pb-1">ẋ = f(x, u)</th>
+              <th className="text-left pb-1">ẋ = f(x, u, p)</th>
               <th className="pb-1 w-6" />
             </tr>
           </thead>
@@ -142,45 +257,6 @@ export function ModelPanel({ nodeId }: Props) {
         {data.states.length === 0 && (
           <p className="text-slate-500 italic text-xs">No states — click "+ Add"</p>
         )}
-      </section>
-
-      {/* Inputs */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Inputs (u)</span>
-          <button
-            className="text-xs text-blue-400 hover:text-blue-300"
-            onClick={() => setInputs([...data.inputs, newVar()])}
-          >
-            + Add
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {data.inputs.map((inp, i) => (
-            <div key={i} className="flex items-center gap-1 bg-slate-700 rounded px-2 py-0.5">
-              <input
-                className="bg-transparent text-white w-16 text-xs focus:outline-none"
-                placeholder="u"
-                value={inp.name}
-                onChange={(e) => {
-                  const inputs = data.inputs.map((v, j) =>
-                    j === i ? { ...v, name: e.target.value } : v
-                  );
-                  setInputs(inputs);
-                }}
-              />
-              <button
-                className="text-slate-500 hover:text-red-400 text-xs"
-                onClick={() => setInputs(data.inputs.filter((_, j) => j !== i))}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          {data.inputs.length === 0 && (
-            <span className="text-slate-500 italic text-xs">No inputs</span>
-          )}
-        </div>
       </section>
 
       {/* Validation feedback */}
