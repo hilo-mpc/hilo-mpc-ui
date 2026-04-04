@@ -5,6 +5,7 @@ import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import type { PlotBlockData } from '../types/blocks';
 
 export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
+  const In = data.flipped ? Position.Right : Position.Left;
   const edges = useDiagramStore((s) => s.edges);
   const nodes = useDiagramStore((s) => s.nodes);
 
@@ -61,7 +62,7 @@ export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
 
       <Handle
         type="target"
-        position={Position.Left}
+        position={In}
         id="plot-data-in"
         className="!w-3 !h-3 !bg-orange-400 !border-2 !border-stone-800"
         title="Connect Simulation, MPC, or Plant results here"

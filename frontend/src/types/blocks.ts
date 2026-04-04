@@ -30,6 +30,7 @@ export interface ModelBlockData {
   /** One CasADi expression per state — maps directly to hilo-mpc set_dynamical_equations() */
   odeExpressions: string[];
   configured: boolean;
+  flipped?: boolean;
 }
 
 // ── Simulation ────────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ export interface SimulationBlockData {
   inputSchedule: InputScheduleEntry[];
   solver: Solver;
   configured: boolean;
+  flipped?: boolean;
 }
 
 // ── MPC ───────────────────────────────────────────────────────────────────────
@@ -65,6 +67,7 @@ export interface MpcBlockData {
   inputLb: Record<string, number | null>;
   inputUb: Record<string, number | null>;
   configured: boolean;
+  flipped?: boolean;
 }
 
 // ── Plant ─────────────────────────────────────────────────────────────────────
@@ -80,6 +83,7 @@ export interface PlantBlockData {
   measurementExpressions: string[];
   measurementNames: Variable[];   // names for each y_i
   configured: boolean;
+  flipped?: boolean;
 }
 
 // ── Plot ──────────────────────────────────────────────────────────────────────
@@ -91,6 +95,7 @@ export interface PlotBlockData {
   yAxes: string[];
   title: string;
   configured: boolean;
+  flipped?: boolean;
 }
 
 // ── Union ─────────────────────────────────────────────────────────────────────

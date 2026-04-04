@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useSimulationStore } from '../store/simulationStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { useProjectStore } from '../store/projectStore';
@@ -16,11 +17,14 @@ export function Toolbar({ projectName, onBack }: Props) {
   const edgeVariant = useUIStore((s) => s.edgeVariant);
   const setEdgeVariant = useUIStore((s) => s.setEdgeVariant);
   const { exportFile, importFile } = useDiagramPersist();
+  const [savedVisible, setSavedVisible] = useState(false);
 
   function handleSave() {
     if (!currentProjectId) return;
     const { nodes, edges } = useDiagramStore.getState();
     saveDiagram(currentProjectId, nodes, edges);
+    setSavedVisible(true);
+    setTimeout(() => setSavedVisible(false), 2000);
   }
 
   const runningCount = activeNodeId ? 1 + queue.length : 0;
@@ -74,6 +78,11 @@ export function Toolbar({ projectName, onBack }: Props) {
       </div>
 
       {/* Save to project */}
+      {savedVisible && (
+        <span className="text-xs text-green-400 transition-opacity">
+          Project saved
+        </span>
+      )}
       <button
         onClick={handleSave}
         className="px-2.5 py-1.5 rounded text-xs text-stone-300 hover:text-white hover:bg-stone-700 transition-colors"

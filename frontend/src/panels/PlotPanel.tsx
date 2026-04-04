@@ -81,6 +81,22 @@ export function PlotPanel({ nodeId }: Props) {
     patch({ yAxes: axes });
   }
 
+  function exportCsv() {
+    if (series.length === 0) return;
+    const cols = ['t', ...data.yAxes.filter((v) => v in series[0].values)];
+    const header = cols.join(',');
+    const rows = series.map((pt) =>
+      cols.map((c) => (c === 't' ? pt.t : (pt.values[c] ?? ''))).join(',')
+    );
+    const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.title || data.label || 'plot'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const noConnectionMsg =
     'Connect a Simulation, MPC results, or Plant states output to this Plot block.';
 
@@ -145,6 +161,22 @@ export function PlotPanel({ nodeId }: Props) {
           </div>
         </section>
       )}
+
+      {/* Export */}
+      <div className="pt-1">
+        <button
+          onClick={exportCsv}
+          disabled={series.length === 0 || data.yAxes.length === 0}
+          className={`w-full py-1.5 rounded text-xs font-medium transition-colors ${
+            series.length > 0 && data.yAxes.length > 0
+              ? 'bg-stone-700 hover:bg-stone-600 text-stone-200'
+              : 'bg-stone-800 text-stone-600 cursor-not-allowed'
+          }`}
+          title={series.length === 0 ? 'Run a simulation first' : 'Download data as CSV'}
+        >
+          Export CSV
+        </button>
+      </div>
     </div>
   );
 }

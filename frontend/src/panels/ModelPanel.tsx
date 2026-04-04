@@ -131,10 +131,12 @@ export function ModelPanel({ nodeId }: Props) {
                     type="number"
                     className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white font-mono"
                     placeholder="0"
-                    value={p.value}
-                    onChange={(e) => {
+                    defaultValue={p.value}
+                    onBlur={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!Number.isFinite(val)) return;
                       const parameters = data.parameters.map((par, j) =>
-                        j === i ? { ...par, value: parseFloat(e.target.value) || 0 } : par
+                        j === i ? { ...par, value: val } : par
                       );
                       setParameters(parameters);
                     }}

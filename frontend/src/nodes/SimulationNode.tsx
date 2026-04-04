@@ -4,6 +4,8 @@ import { useSimulation } from '../hooks/useSimulation';
 import type { SimulationBlockData } from '../types/blocks';
 
 export function SimulationNode({ id, data, selected }: NodeProps<SimulationBlockData>) {
+  const L = data.flipped ? Position.Right : Position.Left;
+  const R = data.flipped ? Position.Left : Position.Right;
   const { run, stop } = useSimulation(id);
   const runState = useSimulationStore((s) => s.runs[id]);
   const queue = useSimulationStore((s) => s.queue);
@@ -101,7 +103,7 @@ export function SimulationNode({ id, data, selected }: NodeProps<SimulationBlock
       {/* Handles */}
       <Handle
         type="target"
-        position={Position.Left}
+        position={L}
         id="sim-model-in"
         style={{ top: '35%' }}
         className="!w-3 !h-3 !bg-amber-400 !border-2 !border-stone-800"
@@ -109,7 +111,7 @@ export function SimulationNode({ id, data, selected }: NodeProps<SimulationBlock
       />
       <Handle
         type="source"
-        position={Position.Right}
+        position={R}
         id="sim-results-out"
         className="!w-3 !h-3 !bg-amber-400 !border-2 !border-stone-800"
         title="Simulation results"

@@ -23,6 +23,15 @@ body {
   stroke-width: 2;
 }
 
+/* Force dark controls buttons (override the light-mode defaults) */
+.react-flow {
+  --xy-controls-button-background-color: #292524;
+  --xy-controls-button-background-color-hover: #44403c;
+  --xy-controls-button-border-color: #57534e;
+  --xy-controls-button-color: #d6d3d1;
+  --xy-controls-box-shadow: 0 0 0 1px #57534e;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

@@ -39,7 +39,11 @@ interface DiagramState {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   addNode: (type: BlockType, position: XYPosition) => string;
+  duplicateNode: (id: string) => string;
+  deleteNode: (id: string) => void;
+  deleteEdge: (id: string) => void;
   updateNodeData: (id: string, data: Partial<BlockData>) => void;
+  updateEdgeData: (id: string, data: Record<string, unknown>) => void;
   getNode: (id: string) => DiagramNode | undefined;
   reset: () => void;
   loadDiagram: (nodes: DiagramNode[], edges: DiagramEdge[]) => void;
@@ -73,10 +77,44 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
     return id;
   },
 
+  duplicateNode: (id) => {
+    const original = get().nodes.find((n) => n.id === id);
+    if (!original) return '';
+    const newNodeId = newId();
+    const clone: DiagramNode = {
+      ...original,
+      id: newNodeId,
+      position: { x: original.position.x + 40, y: original.position.y + 40 },
+      selected: false,
+      data: { ...original.data },
+    };
+    set({ nodes: [...get().nodes, clone] });
+    return newNodeId;
+  },
+
+  deleteNode: (id) => {
+    set({
+      nodes: get().nodes.filter((n) => n.id !== id),
+      edges: get().edges.filter((e) => e.source !== id && e.target !== id),
+    });
+  },
+
+  deleteEdge: (id) => {
+    set({ edges: get().edges.filter((e) => e.id !== id) });
+  },
+
   updateNodeData: (id, patch) => {
     set({
       nodes: get().nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, ...patch } as BlockData } : n
+      ),
+    });
+  },
+
+  updateEdgeData: (id, patch) => {
+    set({
+      edges: get().edges.map((e) =>
+        e.id === id ? { ...e, data: { ...(e.data ?? {}), ...patch } } : e
       ),
     });
   },

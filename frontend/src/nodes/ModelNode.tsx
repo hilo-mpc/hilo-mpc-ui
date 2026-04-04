@@ -2,6 +2,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { ModelBlockData } from '../types/blocks';
 
 export function ModelNode({ data, selected }: NodeProps<ModelBlockData>) {
+  const Out = data.flipped ? Position.Left : Position.Right;
   return (
     <div
       className={`rounded-lg border-2 min-w-[160px] shadow-lg overflow-hidden transition-all ${
@@ -34,7 +35,7 @@ export function ModelNode({ data, selected }: NodeProps<ModelBlockData>) {
 
       <Handle
         type="source"
-        position={Position.Right}
+        position={Out}
         id="model-out"
         className="!w-3 !h-3 !bg-rose-400 !border-2 !border-stone-800"
       />
