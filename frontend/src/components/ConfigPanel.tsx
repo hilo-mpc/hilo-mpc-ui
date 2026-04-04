@@ -7,6 +7,7 @@ import { PlantPanel } from '../panels/PlantPanel';
 import { PlotPanel } from '../panels/PlotPanel';
 import { DataPanel } from '../panels/DataPanel';
 import { AnnPanel } from '../panels/AnnPanel';
+import { FunctionPanel } from '../panels/FunctionPanel';
 
 export function ConfigPanel() {
   const selectedNodeId = useUIStore((s) => s.selectedNodeId);
@@ -32,6 +33,7 @@ export function ConfigPanel() {
     : node.data.blockType === 'plant'      ? 'Plant Config'
     : node.data.blockType === 'data'       ? 'Data Config'
     : node.data.blockType === 'ann'        ? 'ANN Config'
+    : node.data.blockType === 'function'   ? 'Function Config'
     : 'Plot Config';
 
   return (
@@ -53,6 +55,7 @@ export function ConfigPanel() {
         {node.data.blockType === 'plot' && <PlotPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'data' && <DataPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'ann' && <AnnPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'function' && <FunctionPanel nodeId={selectedNodeId} />}
       </div>
     </aside>
   );

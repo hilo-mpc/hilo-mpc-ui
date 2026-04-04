@@ -171,7 +171,7 @@ class MLP:
 # Main training coroutine
 # ---------------------------------------------------------------------------
 
-async def run_training(req: TrainRequest, send_frame) -> None:
+async def run_training(req: TrainRequest, send_frame) -> dict:
     db = req.data_block
     ab = req.ann_block
 
@@ -256,3 +256,16 @@ async def run_training(req: TrainRequest, send_frame) -> None:
         # Yield to event loop every 10 epochs
         if epoch % 10 == 0:
             await asyncio.sleep(0)
+
+    model_state = {
+        "layers": [{"units": int(cfg[1]), "activation": cfg[2]} for cfg in layer_configs],
+        "weights": [W.tolist() for W in model.W],
+        "biases": [b.flatten().tolist() for b in model.b],
+        "x_mean": X_mean.tolist(),
+        "x_std": X_std.tolist(),
+        "y_mean": y_mean.tolist(),
+        "y_std": y_std.tolist(),
+        "input_cols": list(db.input_cols),
+        "output_cols": list(db.output_cols),
+    }
+    return model_state

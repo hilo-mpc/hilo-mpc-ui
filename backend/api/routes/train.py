@@ -49,11 +49,11 @@ async def train_ws(websocket: WebSocket, run_id: str):
         await websocket.send_json(frame)
 
     try:
-        await run_training(req, send_frame)
+        model_state = await run_training(req, send_frame)
         elapsed = round(time.monotonic() - t0, 3)
         result.status = "completed"
         result.elapsed_seconds = elapsed
-        await websocket.send_json({"type": "complete", "elapsed_seconds": elapsed})
+        await websocket.send_json({"type": "complete", "elapsed_seconds": elapsed, "model_state": model_state})
     except asyncio.CancelledError:
         await websocket.send_json({"type": "error", "message": "Cancelled"})
     except Exception as exc:

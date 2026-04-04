@@ -6,6 +6,7 @@ import { PlantNode } from './PlantNode';
 import { PlotNode } from './PlotNode';
 import { DataNode } from './DataNode';
 import { AnnNode } from './AnnNode';
+import { FunctionNode } from './FunctionNode';
 
 export const nodeTypes: NodeTypes = {
   model: ModelNode as any,
@@ -15,4 +16,5 @@ export const nodeTypes: NodeTypes = {
   plot: PlotNode as any,
   data: DataNode as any,
   ann: AnnNode as any,
+  function: FunctionNode as any,
 };

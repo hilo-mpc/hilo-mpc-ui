@@ -18,6 +18,7 @@ import {
   defaultPlotData,
   defaultDataData,
   defaultAnnData,
+  defaultFunctionData,
 } from '../types/blocks';
 
 function makeDefaultData(type: BlockType): BlockData {
@@ -29,6 +30,7 @@ function makeDefaultData(type: BlockType): BlockData {
     case 'plot': return defaultPlotData();
     case 'data': return defaultDataData();
     case 'ann': return defaultAnnData();
+    case 'function': return defaultFunctionData();
   }
 }
 

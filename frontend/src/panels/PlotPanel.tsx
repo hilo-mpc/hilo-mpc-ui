@@ -1,7 +1,8 @@
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
+import { useMlStore } from '../store/mlStore';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
-import type { PlotBlockData, ModelBlockData, PlantBlockData } from '../types/blocks';
+import type { PlotBlockData, ModelBlockData, PlantBlockData, AnnBlockData, FunctionBlockData } from '../types/blocks';
 
 interface Props {
   nodeId: string;
@@ -30,8 +31,13 @@ export function PlotPanel({ nodeId }: Props) {
     if (mpcEdge) runNodeId = mpcEdge.target;
   }
 
+  const isFnOutput = plotEdge?.sourceHandle === 'fn-output';
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const series = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
+  const simSeries = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const mlSeries = useMlStore((s) => (runNodeId ? (s.predictions[runNodeId] ?? []) : []));
+  const series = isFnOutput ? mlSeries : simSeries;
 
   // Derive available variable names depending on source type
   let availableVars: string[] = [];
@@ -59,7 +65,16 @@ export function PlotPanel({ nodeId }: Props) {
       ];
     }
   } else if (sourceType === 'ann') {
-    availableVars = ['train_loss', 'val_loss'];
+    if (isFnOutput) {
+      // Prediction output: columns come from the trained model
+      const annData = sourceNode!.data as AnnBlockData;
+      availableVars = annData.trainedModel?.outputCols ?? [];
+    } else {
+      availableVars = ['train_loss', 'val_loss'];
+    }
+  } else if (sourceType === 'function') {
+    const fnData = sourceNode!.data as FunctionBlockData;
+    availableVars = fnData.outputs.map((o) => o.name);
   } else if (sourceType === 'plant') {
     // Direct plant-states-out connection: plant drives the series (via its MPC)
     const plantData = sourceNode!.data as PlantBlockData;

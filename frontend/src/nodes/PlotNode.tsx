@@ -1,10 +1,12 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useSimulationStore } from '../store/simulationStore';
+import { useMlStore } from '../store/mlStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
 import type { PlotBlockData } from '../types/blocks';
 
-export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
+export function PlotNode({ id, data: _data, selected }: NodeProps) {
+  const data = _data as unknown as PlotBlockData;
   const In = data.flipped ? Position.Right : Position.Left;
   const edges = useDiagramStore((s) => s.edges);
   const nodes = useDiagramStore((s) => s.nodes);
@@ -12,6 +14,7 @@ export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
   // Find source node connected to plot-data-in
   const plotEdge = edges.find((e) => e.target === id && e.targetHandle === 'plot-data-in');
   const sourceNode = plotEdge ? nodes.find((n) => n.id === plotEdge.source) : undefined;
+  const isFnOutput = plotEdge?.sourceHandle === 'fn-output';
 
   // If source is a Plant (via plant-states-out), find the MPC that controls it
   let runNodeId = plotEdge?.source ?? null;
@@ -22,7 +25,9 @@ export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
     if (mpcEdge) runNodeId = mpcEdge.target;
   }
 
-  const series = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
+  const simSeries = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
+  const mlSeries = useMlStore((s) => (runNodeId ? (s.predictions[runNodeId] ?? []) : []));
+  const series = isFnOutput ? mlSeries : simSeries;
   const status = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.status ?? 'idle') : 'idle'));
 
   const hasData = series.length > 0;

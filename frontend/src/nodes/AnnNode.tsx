@@ -3,8 +3,9 @@ import { useSimulationStore } from '../store/simulationStore';
 import { useAnn } from '../hooks/useAnn';
 import type { AnnBlockData } from '../types/blocks';
 
-export function AnnNode({ id, data, selected }: NodeProps<AnnBlockData>) {
-  const { train, stop } = useAnn(id);
+export function AnnNode({ id, data: _data, selected }: NodeProps) {
+  const data = _data as unknown as AnnBlockData;
+  const { train, stop, predict } = useAnn(id);
   const runState = useSimulationStore((s) => s.runs[id]);
   const queue = useSimulationStore((s) => s.queue);
   const status = runState?.status ?? 'idle';
@@ -15,10 +16,10 @@ export function AnnNode({ id, data, selected }: NodeProps<AnnBlockData>) {
   const L = data.flipped ? Position.Right : Position.Left;
   const R = data.flipped ? Position.Left : Position.Right;
 
-  // Build architecture summary
   const arch = data.layers.map((l) => l.units).join(' → ');
   const lastPoint = runState?.series[runState.series.length - 1];
   const currentEpoch = lastPoint ? Math.round(lastPoint.t) : 0;
+  const hasTrained = !!data.trainedModel;
 
   return (
     <div
@@ -34,7 +35,7 @@ export function AnnNode({ id, data, selected }: NodeProps<AnnBlockData>) {
         )}
         {isRunning && <span className="ml-auto text-xs text-indigo-200 animate-pulse">training</span>}
         {isQueued && <span className="ml-auto text-xs text-indigo-300">#{queuePos} queued</span>}
-        {status === 'completed' && <span className="ml-auto text-xs text-green-300">done</span>}
+        {status === 'completed' && <span className="ml-auto text-xs text-green-300">trained</span>}
         {status === 'failed' && <span className="ml-auto text-xs text-rose-300">error</span>}
       </div>
 
@@ -65,7 +66,7 @@ export function AnnNode({ id, data, selected }: NodeProps<AnnBlockData>) {
         )}
       </div>
 
-      {/* Train / Stop */}
+      {/* Buttons */}
       <div className="bg-stone-900 px-3 py-2 flex gap-2">
         {isRunning ? (
           <button
@@ -83,26 +84,73 @@ export function AnnNode({ id, data, selected }: NodeProps<AnnBlockData>) {
             Cancel (#{queuePos})
           </button>
         ) : (
-          <button
-            onClick={(e) => { e.stopPropagation(); train(); }}
-            disabled={!data.configured}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded text-xs font-semibold transition-colors ${
-              data.configured
-                ? 'bg-indigo-700 hover:bg-indigo-600 text-white'
-                : 'bg-stone-700 text-stone-500 cursor-not-allowed'
-            }`}
-            title={!data.configured ? 'Connect a Data block first' : 'Start training'}
-          >
-            <span className="w-0 h-0 border-y-3 border-y-transparent border-l-5 border-l-white inline-block" />
-            Train
-          </button>
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); train(); }}
+              disabled={!data.configured}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded text-xs font-semibold transition-colors ${
+                data.configured
+                  ? 'bg-indigo-700 hover:bg-indigo-600 text-white'
+                  : 'bg-stone-700 text-stone-500 cursor-not-allowed'
+              }`}
+              title={!data.configured ? 'Connect a Data block first' : 'Start training'}
+            >
+              <span className="w-0 h-0 border-y-3 border-y-transparent border-l-5 border-l-white inline-block" />
+              Train
+            </button>
+            {hasTrained && (
+              <button
+                onClick={(e) => { e.stopPropagation(); predict(); }}
+                className="flex-1 py-1 rounded text-xs font-semibold bg-emerald-800 hover:bg-emerald-700 text-emerald-200 transition-colors border border-emerald-700"
+                title="Run prediction on connected data (fn-input)"
+              >
+                Predict
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      <Handle type="target" position={L} id="ann-data-in"
-        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-stone-800" title="Data input" />
-      <Handle type="source" position={R} id="ann-results-out"
-        className="!w-3 !h-3 !bg-indigo-300 !border-2 !border-stone-800" title="Training results" />
+      {/* Training data handle (top) */}
+      <Handle
+        type="target"
+        position={L}
+        id="ann-data-in"
+        style={{ top: hasTrained ? '35%' : '50%' }}
+        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-stone-800"
+        title="Training data input"
+      />
+      {/* Prediction data handle (bottom, only after training) */}
+      {hasTrained && (
+        <Handle
+          type="target"
+          position={L}
+          id="fn-input"
+          style={{ top: '70%' }}
+          className="!w-3 !h-3 !bg-sky-300 !border-2 !border-stone-800"
+          title="Prediction data input"
+        />
+      )}
+      {/* Training results handle (top) */}
+      <Handle
+        type="source"
+        position={R}
+        id="ann-results-out"
+        style={{ top: hasTrained ? '35%' : '50%' }}
+        className="!w-3 !h-3 !bg-indigo-300 !border-2 !border-stone-800"
+        title="Training results (loss curves)"
+      />
+      {/* Prediction output handle (bottom, only after training) */}
+      {hasTrained && (
+        <Handle
+          type="source"
+          position={R}
+          id="fn-output"
+          style={{ top: '70%' }}
+          className="!w-3 !h-3 !bg-emerald-400 !border-2 !border-stone-800"
+          title="Prediction output"
+        />
+      )}
     </div>
   );
 }

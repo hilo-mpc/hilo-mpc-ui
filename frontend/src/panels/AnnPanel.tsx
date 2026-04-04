@@ -164,6 +164,24 @@ export function AnnPanel({ nodeId }: Props) {
           </div>
         </section>
       )}
+
+      {/* Trained model info */}
+      {data.trainedModel && (
+        <section className="rounded bg-stone-800 border border-stone-700 px-3 py-2 space-y-1">
+          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
+            Trained model
+          </span>
+          <div className="text-xs text-stone-400 mt-1">
+            in: <span className="text-white font-mono">{data.trainedModel.inputCols.join(', ')}</span>
+          </div>
+          <div className="text-xs text-stone-400">
+            out: <span className="text-white font-mono">{data.trainedModel.outputCols.join(', ')}</span>
+          </div>
+          <p className="text-xs text-stone-500 italic mt-1">
+            Connect a Data block to fn-input, then click Predict on the node.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

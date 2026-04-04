@@ -1,8 +1,36 @@
+import { useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { useDiagramStore } from '../store/diagramStore';
 import type { DataBlockData } from '../types/blocks';
 
-export function DataNode({ data, selected }: NodeProps<DataBlockData>) {
+export function DataNode({ id, data, selected }: NodeProps<DataBlockData>) {
+  const { updateNodeData } = useDiagramStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const Out = data.flipped ? Position.Left : Position.Right;
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = (ev.target?.result as string) ?? '';
+      const lines = text.split('\n').filter((l) => l.trim());
+      const header = lines[0]
+        ? lines[0].split(',').map((s) => s.trim().replace(/^"|"$/g, ''))
+        : [];
+      updateNodeData(id, {
+        fileName: file.name,
+        columns: header,
+        rowCount: Math.max(0, lines.length - 1),
+        csvContent: text,
+        inputCols: [],
+        outputCols: [],
+        configured: false,
+      });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
 
   return (
     <div
@@ -29,13 +57,18 @@ export function DataNode({ data, selected }: NodeProps<DataBlockData>) {
           <div className="text-stone-500 italic">No CSV loaded</div>
         )}
       </div>
-      <Handle
-        type="source"
-        position={Out}
-        id="data-out"
-        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-stone-800"
-        title="Data output"
-      />
+      <div className="bg-stone-900 px-3 py-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+          className="w-full py-1 rounded text-xs font-medium bg-sky-800 hover:bg-sky-700 text-sky-200 transition-colors border border-sky-700"
+        >
+          {data.fileName ? 'Replace CSV' : 'Upload CSV'}
+        </button>
+        <input ref={fileInputRef} type="file" accept=".csv,text/csv"
+          className="hidden" onChange={handleFile} />
+      </div>
+      <Handle type="source" position={Out} id="data-out"
+        className="!w-3 !h-3 !bg-sky-400 !border-2 !border-stone-800" title="Data output" />
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
-import { buildTrainRequest, postTrain, deleteTrain } from '../api/simulation';
+import { useMlStore } from '../store/mlStore';
+import { buildTrainRequest, postTrain, deleteTrain, buildPredictRequest, postPredict } from '../api/simulation';
 import { SimulationWebSocket } from '../api/websocket';
-import type { DataBlockData, AnnBlockData } from '../types/blocks';
+import type { DataBlockData, AnnBlockData, TrainedModelState } from '../types/blocks';
 
 export function useAnn(nodeId: string) {
   const wsRef = useRef<SimulationWebSocket | null>(null);
@@ -61,6 +62,22 @@ export function useAnn(nodeId: string) {
             if (frame.val_loss != null) values.val_loss = frame.val_loss;
             useSimulationStore.getState().appendPoint(nodeId, { t: frame.epoch, values });
           } else if (frame.type === 'complete') {
+            // Save trained model state to the ANN block data
+            if (frame.model_state) {
+              const ms = frame.model_state;
+              const trainedModel: TrainedModelState = {
+                layers: ms.layers,
+                weights: ms.weights,
+                biases: ms.biases,
+                xMean: ms.x_mean,
+                xStd: ms.x_std,
+                yMean: ms.y_mean,
+                yStd: ms.y_std,
+                inputCols: ms.input_cols,
+                outputCols: ms.output_cols,
+              };
+              useDiagramStore.getState().updateNodeData(nodeId, { trainedModel });
+            }
             useSimulationStore.getState().completeRun(nodeId, frame.elapsed_seconds);
           } else if (frame.type === 'error') {
             useSimulationStore.getState().failRun(nodeId, frame.message);
@@ -97,5 +114,26 @@ export function useAnn(nodeId: string) {
     store.failRun(nodeId, 'Cancelled by user');
   }, [nodeId]);
 
-  return { train, stop };
+  const predict = useCallback(async () => {
+    const { nodes, edges } = useDiagramStore.getState();
+    const annNode = nodes.find((n) => n.id === nodeId);
+    if (!annNode || annNode.data.blockType !== 'ann') return;
+    const annData = annNode.data as AnnBlockData;
+    if (!annData.trainedModel) return;
+
+    const dataEdge = edges.find((e) => e.target === nodeId && e.targetHandle === 'fn-input');
+    const dataNode = dataEdge ? nodes.find((n) => n.id === dataEdge.source) : undefined;
+    const dataBlock = dataNode?.data.blockType === 'data' ? (dataNode.data as DataBlockData) : null;
+    if (!dataBlock?.csvContent) return;
+
+    try {
+      const req = buildPredictRequest(dataBlock, annData.trainedModel);
+      const result = await postPredict(req);
+      useMlStore.getState().setPredictions(nodeId, result.series);
+    } catch (err) {
+      console.error('Prediction failed', err);
+    }
+  }, [nodeId]);
+
+  return { train, stop, predict };
 }

@@ -1,9 +1,22 @@
 import { getWsBaseUrl } from './client';
 
+interface TrainedModelStateRaw {
+  layers: { units: number; activation: string }[];
+  weights: number[][][];
+  biases: number[][];
+  x_mean: number[];
+  x_std: number[];
+  y_mean: number[];
+  y_std: number[];
+  input_cols: string[];
+  output_cols: string[];
+}
+
 export type WsFrame =
   | { type: 'step'; t: number; values: Record<string, number> }
-  | { type: 'complete'; elapsed_seconds: number }
-  | { type: 'error'; message: string };
+  | { type: 'complete'; elapsed_seconds: number; model_state?: TrainedModelStateRaw }
+  | { type: 'error'; message: string }
+  | { type: 'epoch'; epoch: number; train_loss: number; val_loss?: number };
 
 export class SimulationWebSocket {
   private ws: WebSocket | null = null;

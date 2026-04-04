@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, DataBlockData, AnnBlockData, InputScheduleEntry } from '../types/blocks';
+import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, DataBlockData, AnnBlockData, TrainedModelState, InputScheduleEntry } from '../types/blocks';
 
 // ── Request shape matching the Python Pydantic models ─────────────────────────
 
@@ -243,6 +243,72 @@ export async function postTrain(req: TrainRequest): Promise<string> {
 export async function deleteTrain(runId: string): Promise<void> {
   await apiClient.delete(`/train/${runId}`);
 }
+
+// ── Predict API ───────────────────────────────────────────────────────────────
+
+interface PredictRequest {
+  csv_content: string;
+  input_cols: string[];
+  model_state: {
+    layers: { units: number; activation: string }[];
+    weights: number[][][];
+    biases: number[][];
+    x_mean: number[];
+    x_std: number[];
+    y_mean: number[];
+    y_std: number[];
+    input_cols: string[];
+    output_cols: string[];
+  };
+}
+
+export function buildPredictRequest(data: DataBlockData, model: TrainedModelState): PredictRequest {
+  return {
+    csv_content: data.csvContent,
+    input_cols: data.inputCols,
+    model_state: {
+      layers: model.layers,
+      weights: model.weights,
+      biases: model.biases,
+      x_mean: model.xMean,
+      x_std: model.xStd,
+      y_mean: model.yMean,
+      y_std: model.yStd,
+      input_cols: model.inputCols,
+      output_cols: model.outputCols,
+    },
+  };
+}
+
+export async function postPredict(
+  req: PredictRequest
+): Promise<{ series: { t: number; values: Record<string, number> }[] }> {
+  const resp = await apiClient.post<{ series: { t: number; values: Record<string, number> }[] }>(
+    '/predict',
+    req
+  );
+  return resp.data;
+}
+
+// ── Evaluate API ──────────────────────────────────────────────────────────────
+
+interface EvaluateRequest {
+  csv_content: string;
+  input_cols: string[];
+  output_defs: { name: string; expr: string }[];
+}
+
+export async function postEvaluate(
+  req: EvaluateRequest
+): Promise<{ series: { t: number; values: Record<string, number> }[] }> {
+  const resp = await apiClient.post<{ series: { t: number; values: Record<string, number> }[] }>(
+    '/evaluate',
+    req
+  );
+  return resp.data;
+}
+
+// ── Validate API ──────────────────────────────────────────────────────────────
 
 export async function validateEquations(
   states: BackendVariable[],

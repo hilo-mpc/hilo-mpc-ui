@@ -24,8 +24,9 @@ const VALID_CONNECTIONS: Record<string, string[]> = {
   'mpc-model-in':       ['model-out'],
   'mpc-measurement-in': ['plant-measurement-out'],
   'plant-control-in':   ['mpc-control-out'],
-  'plot-data-in':       ['sim-results-out', 'mpc-results-out', 'plant-states-out', 'ann-results-out'],
+  'plot-data-in':       ['sim-results-out', 'mpc-results-out', 'plant-states-out', 'ann-results-out', 'fn-output'],
   'ann-data-in':        ['data-out'],
+  'fn-input':           ['data-out'],
 };
 
 const isValidConnection: IsValidConnection = (connection: Connection) => {
@@ -136,6 +137,7 @@ export function Canvas() {
               case 'plot': return '#9a3412';
               case 'data': return '#0369a1';
               case 'ann': return '#4338ca';
+              case 'function': return '#065f46';
               default: return '#57534e';
             }
           }}

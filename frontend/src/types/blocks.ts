@@ -1,4 +1,4 @@
-export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot' | 'data' | 'ann';
+export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot' | 'data' | 'ann' | 'function';
 
 export interface Variable {
   name: string;
@@ -108,6 +108,18 @@ export interface AnnLayer {
   activation: 'relu' | 'tanh' | 'sigmoid' | 'linear';
 }
 
+export interface TrainedModelState {
+  layers: { units: number; activation: string }[];
+  weights: number[][][];
+  biases: number[][];
+  xMean: number[];
+  xStd: number[];
+  yMean: number[];
+  yStd: number[];
+  inputCols: string[];
+  outputCols: string[];
+}
+
 export interface AnnBlockData {
   blockType: 'ann';
   label: string;
@@ -116,6 +128,23 @@ export interface AnnBlockData {
   batchSize: number;
   learningRate: number;
   trainSplit: number;
+  trainedModel: TrainedModelState | null;
+  configured: boolean;
+  flipped?: boolean;
+}
+
+// ── Function ──────────────────────────────────────────────────────────────────
+
+export interface FunctionOutput {
+  name: string;
+  expr: string;
+}
+
+export interface FunctionBlockData {
+  blockType: 'function';
+  label: string;
+  inputNames: string[];
+  outputs: FunctionOutput[];
   configured: boolean;
   flipped?: boolean;
 }
@@ -134,7 +163,7 @@ export interface PlotBlockData {
 
 // ── Union ─────────────────────────────────────────────────────────────────────
 
-export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData | DataBlockData | AnnBlockData;
+export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData | DataBlockData | AnnBlockData | FunctionBlockData;
 
 // ── Default factories ─────────────────────────────────────────────────────────
 
@@ -224,6 +253,17 @@ export function defaultAnnData(): AnnBlockData {
     batchSize: 32,
     learningRate: 0.001,
     trainSplit: 0.8,
+    trainedModel: null,
+    configured: false,
+  };
+}
+
+export function defaultFunctionData(): FunctionBlockData {
+  return {
+    blockType: 'function',
+    label: 'f(x)',
+    inputNames: ['x'],
+    outputs: [{ name: 'y', expr: 'x' }],
     configured: false,
   };
 }

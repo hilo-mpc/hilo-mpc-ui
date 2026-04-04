@@ -58,6 +58,13 @@ const BLOCKS: BlockDef[] = [
     color: 'border-indigo-700 bg-stone-800 hover:border-indigo-500',
     headerColor: 'bg-indigo-700',
   },
+  {
+    type: 'function',
+    label: 'Function',
+    description: 'Evaluate arbitrary expressions on data',
+    color: 'border-emerald-700 bg-stone-800 hover:border-emerald-500',
+    headerColor: 'bg-emerald-700',
+  },
 ];
 
 export function Sidebar() {
