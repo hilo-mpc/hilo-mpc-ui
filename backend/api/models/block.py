@@ -44,6 +44,16 @@ class PlotBlockConfig(BaseModel):
     y_axes: list[str] = []
 
 
+class PlantBlockConfig(BaseModel):
+    block_id: str
+    states: list[Variable]
+    inputs: list[Variable]
+    parameters: list[Parameter] = []
+    ode_expressions: list[str]
+    measurement_expressions: list[str] = []  # empty = full state observation (y = x)
+    measurement_names: list[str] = []        # names for each measurement output
+
+
 class MpcBlockConfig(BaseModel):
     block_id: str
     horizon: int = 10

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, InputScheduleEntry } from '../types/blocks';
+import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, InputScheduleEntry } from '../types/blocks';
 
 // ── Request shape matching the Python Pydantic models ─────────────────────────
 
@@ -118,15 +118,27 @@ interface BackendMpcBlock {
   input_ub: Record<string, number | null>;
 }
 
+interface BackendPlantBlock {
+  block_id: string;
+  states: BackendVariable[];
+  inputs: BackendVariable[];
+  parameters: BackendParameter[];
+  ode_expressions: string[];
+  measurement_expressions: string[];
+  measurement_names: string[];
+}
+
 interface MpcRequest {
   diagram_id: string;
   model_block: BackendModelBlock;
+  plant_block: BackendPlantBlock;
   mpc_block: BackendMpcBlock;
 }
 
 export function buildMpcRequest(
   diagramId: string,
   model: ModelBlockData,
+  plant: PlantBlockData,
   mpc: MpcBlockData,
 ): MpcRequest {
   return {
@@ -137,6 +149,15 @@ export function buildMpcRequest(
       inputs: model.inputs,
       parameters: model.parameters.map((p) => ({ name: p.name, value: p.value })),
       ode_expressions: model.odeExpressions,
+    },
+    plant_block: {
+      block_id: 'plant',
+      states: plant.states,
+      inputs: plant.inputs,
+      parameters: plant.parameters.map((p) => ({ name: p.name, value: p.value })),
+      ode_expressions: plant.odeExpressions,
+      measurement_expressions: plant.measurementExpressions,
+      measurement_names: plant.measurementNames.map((m) => m.name),
     },
     mpc_block: {
       block_id: mpc.label,

@@ -6,13 +6,23 @@ import type { PlotBlockData } from '../types/blocks';
 
 export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
   const edges = useDiagramStore((s) => s.edges);
+  const nodes = useDiagramStore((s) => s.nodes);
 
-  // Find the simulation node connected to this plot
-  const simEdge = edges.find((e) => e.target === id && e.targetHandle === 'plot-data-in');
-  const simNodeId = simEdge?.source ?? null;
+  // Find source node connected to plot-data-in
+  const plotEdge = edges.find((e) => e.target === id && e.targetHandle === 'plot-data-in');
+  const sourceNode = plotEdge ? nodes.find((n) => n.id === plotEdge.source) : undefined;
 
-  const series = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.series ?? []) : []));
-  const status = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.status ?? 'idle') : 'idle'));
+  // If source is a Plant (via plant-states-out), find the MPC that controls it
+  let runNodeId = plotEdge?.source ?? null;
+  if (sourceNode?.data?.blockType === 'plant') {
+    const mpcEdge = edges.find(
+      (e) => e.source === runNodeId && e.sourceHandle === 'plant-measurement-out'
+    );
+    if (mpcEdge) runNodeId = mpcEdge.target;
+  }
+
+  const series = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
+  const status = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.status ?? 'idle') : 'idle'));
 
   const hasData = series.length > 0;
 
@@ -54,7 +64,7 @@ export function PlotNode({ id, data, selected }: NodeProps<PlotBlockData>) {
         position={Position.Left}
         id="plot-data-in"
         className="!w-3 !h-3 !bg-orange-400 !border-2 !border-stone-800"
-        title="Connect Simulation results here"
+        title="Connect Simulation, MPC, or Plant results here"
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
 import { TimeSeriesChart } from '../components/charts/TimeSeriesChart';
-import type { PlotBlockData, ModelBlockData } from '../types/blocks';
+import type { PlotBlockData, ModelBlockData, PlantBlockData } from '../types/blocks';
 
 interface Props {
   nodeId: string;
@@ -15,30 +15,58 @@ export function PlotPanel({ nodeId }: Props) {
   if (!node || node.data.blockType !== 'plot') return null;
   const data = node.data as PlotBlockData;
 
-  // Find connected Simulation node → its connected Model node → state names
-  const simEdge = edges.find(
-    (e) => e.target === nodeId && e.targetHandle === 'plot-data-in'
-  );
-  const simNode = simEdge ? nodes.find((n) => n.id === simEdge.source) : undefined;
-  const simNodeId = simNode?.id ?? null;
+  // Find source connected to plot-data-in
+  const plotEdge = edges.find((e) => e.target === nodeId && e.targetHandle === 'plot-data-in');
+  const sourceNode = plotEdge ? nodes.find((n) => n.id === plotEdge.source) : undefined;
+  const sourceType = sourceNode?.data?.blockType;
+
+  // Resolve run node id (for series lookup)
+  // If source is Plant, the run lives in the MPC that controls it
+  let runNodeId = plotEdge?.source ?? null;
+  if (sourceType === 'plant') {
+    const mpcEdge = edges.find(
+      (e) => e.source === runNodeId && e.sourceHandle === 'plant-measurement-out'
+    );
+    if (mpcEdge) runNodeId = mpcEdge.target;
+  }
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const series = useSimulationStore((s) => (simNodeId ? (s.runs[simNodeId]?.series ?? []) : []));
+  const series = useSimulationStore((s) => (runNodeId ? (s.runs[runNodeId]?.series ?? []) : []));
 
-  const modelEdge = simNode
-    ? edges.find((e) => e.target === simNode.id && e.targetHandle === 'sim-model-in')
-    : undefined;
-  const modelNode = modelEdge ? nodes.find((n) => n.id === modelEdge.source) : undefined;
-  const modelData = modelNode?.data.blockType === 'model'
-    ? (modelNode.data as ModelBlockData)
-    : null;
+  // Derive available variable names depending on source type
+  let availableVars: string[] = [];
 
-  const isMpc = simNode?.data.blockType === 'mpc';
-  const availableVars = [
-    ...(modelData?.states.map((s) => s.name) ?? []),
-    // For MPC connections also expose inputs (controller outputs)
-    ...(isMpc ? (modelData?.inputs.map((i) => i.name) ?? []) : []),
-  ];
+  if (sourceType === 'simulation') {
+    // Find Model connected to Simulation
+    const modelEdge = edges.find(
+      (e) => e.target === sourceNode!.id && e.targetHandle === 'sim-model-in'
+    );
+    const modelNode = modelEdge ? nodes.find((n) => n.id === modelEdge.source) : undefined;
+    const modelData = modelNode?.data.blockType === 'model' ? (modelNode.data as ModelBlockData) : null;
+    availableVars = modelData?.states.map((s) => s.name) ?? [];
+  } else if (sourceType === 'mpc') {
+    // Find Plant connected to MPC measurement input
+    const plantEdge = edges.find(
+      (e) => e.target === sourceNode!.id && e.targetHandle === 'mpc-measurement-in'
+    );
+    const plantNode = plantEdge ? nodes.find((n) => n.id === plantEdge.source) : undefined;
+    const plantData = plantNode?.data.blockType === 'plant' ? (plantNode.data as PlantBlockData) : null;
+    if (plantData) {
+      availableVars = [
+        ...plantData.states.map((s) => s.name),
+        ...plantData.inputs.map((i) => i.name),
+        ...plantData.measurementNames.map((m) => m.name).filter((n) => n.trim()),
+      ];
+    }
+  } else if (sourceType === 'plant') {
+    // Direct plant-states-out connection: plant drives the series (via its MPC)
+    const plantData = sourceNode!.data as PlantBlockData;
+    availableVars = [
+      ...plantData.states.map((s) => s.name),
+      ...plantData.inputs.map((i) => i.name),
+      ...plantData.measurementNames.map((m) => m.name).filter((n) => n.trim()),
+    ];
+  }
 
   function patch(partial: Partial<PlotBlockData>) {
     const next = { ...data, ...partial };
@@ -52,6 +80,9 @@ export function PlotPanel({ nodeId }: Props) {
       : [...data.yAxes, name];
     patch({ yAxes: axes });
   }
+
+  const noConnectionMsg =
+    'Connect a Simulation, MPC results, or Plant states output to this Plot block.';
 
   return (
     <div className="p-4 space-y-5 text-sm text-stone-200">
@@ -80,9 +111,7 @@ export function PlotPanel({ nodeId }: Props) {
           Variables to plot
         </span>
         {availableVars.length === 0 ? (
-          <p className="mt-1 text-xs text-stone-500 italic">
-            Connect a Model → Simulation → this Plot block to see available variables.
-          </p>
+          <p className="mt-1 text-xs text-stone-500 italic">{noConnectionMsg}</p>
         ) : (
           <div className="mt-2 flex flex-wrap gap-2">
             {availableVars.map((name) => {

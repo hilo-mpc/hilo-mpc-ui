@@ -1,4 +1,4 @@
-export type BlockType = 'model' | 'simulation' | 'mpc' | 'plot';
+export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot';
 
 export interface Variable {
   name: string;
@@ -67,6 +67,21 @@ export interface MpcBlockData {
   configured: boolean;
 }
 
+// ── Plant ─────────────────────────────────────────────────────────────────────
+
+export interface PlantBlockData {
+  blockType: 'plant';
+  label: string;
+  states: Variable[];
+  inputs: Variable[];
+  parameters: Parameter[];
+  odeExpressions: string[];
+  /** h(x) expressions — one per measurement output; empty means y = x (full state) */
+  measurementExpressions: string[];
+  measurementNames: Variable[];   // names for each y_i
+  configured: boolean;
+}
+
 // ── Plot ──────────────────────────────────────────────────────────────────────
 
 export interface PlotBlockData {
@@ -80,7 +95,7 @@ export interface PlotBlockData {
 
 // ── Union ─────────────────────────────────────────────────────────────────────
 
-export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlotBlockData;
+export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData;
 
 // ── Default factories ─────────────────────────────────────────────────────────
 
@@ -125,6 +140,20 @@ export function defaultMpcData(): MpcBlockData {
     stateUb: {},
     inputLb: {},
     inputUb: {},
+    configured: false,
+  };
+}
+
+export function defaultPlantData(): PlantBlockData {
+  return {
+    blockType: 'plant',
+    label: 'Plant',
+    states: [],
+    inputs: [],
+    parameters: [],
+    odeExpressions: [],
+    measurementExpressions: [],
+    measurementNames: [],
     configured: false,
   };
 }

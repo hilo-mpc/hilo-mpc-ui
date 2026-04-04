@@ -31,6 +31,13 @@ const BLOCKS: BlockDef[] = [
     headerColor: 'bg-violet-700',
   },
   {
+    type: 'plant',
+    label: 'Plant',
+    description: 'Real system with ODE dynamics and measurement equations',
+    color: 'border-teal-700 bg-stone-800 hover:border-teal-500',
+    headerColor: 'bg-teal-700',
+  },
+  {
     type: 'plot',
     label: 'Plot',
     description: 'Visualise simulation results in real-time',

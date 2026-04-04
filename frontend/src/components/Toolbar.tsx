@@ -1,6 +1,7 @@
 import { useSimulationStore } from '../store/simulationStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { useProjectStore } from '../store/projectStore';
+import { useUIStore, type EdgeVariant } from '../store/uiStore';
 import { useDiagramPersist } from '../hooks/useDiagramPersist';
 
 interface Props {
@@ -12,6 +13,8 @@ export function Toolbar({ projectName, onBack }: Props) {
   const { currentProjectId, saveDiagram } = useProjectStore();
   const queue = useSimulationStore((s) => s.queue);
   const activeNodeId = useSimulationStore((s) => s.activeNodeId);
+  const edgeVariant = useUIStore((s) => s.edgeVariant);
+  const setEdgeVariant = useUIStore((s) => s.setEdgeVariant);
   const { exportFile, importFile } = useDiagramPersist();
 
   function handleSave() {
@@ -51,6 +54,24 @@ export function Toolbar({ projectName, onBack }: Props) {
       )}
 
       <div className="flex-1" />
+
+      {/* Edge style toggle */}
+      <div className="flex items-center gap-0.5 bg-stone-800 rounded px-1 py-0.5">
+        {(['bezier', 'straight', 'rounded'] as EdgeVariant[]).map((v) => (
+          <button
+            key={v}
+            onClick={() => setEdgeVariant(v)}
+            className={`px-2 py-0.5 rounded text-xs transition-colors ${
+              edgeVariant === v
+                ? 'bg-stone-600 text-white'
+                : 'text-stone-500 hover:text-stone-300'
+            }`}
+            title={v === 'bezier' ? 'Curved edges' : v === 'straight' ? 'Straight edges' : 'Rounded step edges'}
+          >
+            {v === 'bezier' ? '~' : v === 'straight' ? '/' : '⌐'}
+          </button>
+        ))}
+      </div>
 
       {/* Save to project */}
       <button

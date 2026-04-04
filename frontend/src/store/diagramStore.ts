@@ -14,6 +14,7 @@ import {
   defaultModelData,
   defaultSimulationData,
   defaultMpcData,
+  defaultPlantData,
   defaultPlotData,
 } from '../types/blocks';
 
@@ -22,6 +23,7 @@ function makeDefaultData(type: BlockType): BlockData {
     case 'model': return defaultModelData();
     case 'simulation': return defaultSimulationData();
     case 'mpc': return defaultMpcData();
+    case 'plant': return defaultPlantData();
     case 'plot': return defaultPlotData();
   }
 }

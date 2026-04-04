@@ -1,10 +1,10 @@
-"""Translates ModelBlockConfig into a configured hilo_mpc.Model."""
+"""Translates ModelBlockConfig (or PlantBlockConfig) into a configured hilo_mpc.Model."""
 from hilo_mpc import Model
 
-from api.models.block import ModelBlockConfig
+from api.models.block import ModelBlockConfig, PlantBlockConfig
 
 
-def build_model(cfg: ModelBlockConfig) -> Model:
+def build_model(cfg: ModelBlockConfig | PlantBlockConfig) -> Model:
     model = Model(time_unit="s")
 
     state_names = [s.name for s in cfg.states]

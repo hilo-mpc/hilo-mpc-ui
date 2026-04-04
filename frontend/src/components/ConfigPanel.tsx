@@ -3,6 +3,7 @@ import { useDiagramStore } from '../store/diagramStore';
 import { ModelPanel } from '../panels/ModelPanel';
 import { SimulationPanel } from '../panels/SimulationPanel';
 import { MpcPanel } from '../panels/MpcPanel';
+import { PlantPanel } from '../panels/PlantPanel';
 import { PlotPanel } from '../panels/PlotPanel';
 
 export function ConfigPanel() {
@@ -23,13 +24,11 @@ export function ConfigPanel() {
   if (!node) return null;
 
   const title =
-    node.data.blockType === 'model'
-      ? 'Model Config'
-      : node.data.blockType === 'simulation'
-      ? 'Simulation Config'
-      : node.data.blockType === 'mpc'
-      ? 'MPC Config'
-      : 'Plot Config';
+    node.data.blockType === 'model'      ? 'Model Config'
+    : node.data.blockType === 'simulation' ? 'Simulation Config'
+    : node.data.blockType === 'mpc'        ? 'MPC Config'
+    : node.data.blockType === 'plant'      ? 'Plant Config'
+    : 'Plot Config';
 
   return (
     <aside className="w-72 shrink-0 bg-stone-900 border-l border-stone-700 flex flex-col overflow-hidden">
@@ -46,6 +45,7 @@ export function ConfigPanel() {
         {node.data.blockType === 'model' && <ModelPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'simulation' && <SimulationPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'mpc' && <MpcPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'plant' && <PlantPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'plot' && <PlotPanel nodeId={selectedNodeId} />}
       </div>
     </aside>
