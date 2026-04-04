@@ -5,6 +5,8 @@ import { SimulationPanel } from '../panels/SimulationPanel';
 import { MpcPanel } from '../panels/MpcPanel';
 import { PlantPanel } from '../panels/PlantPanel';
 import { PlotPanel } from '../panels/PlotPanel';
+import { DataPanel } from '../panels/DataPanel';
+import { AnnPanel } from '../panels/AnnPanel';
 
 export function ConfigPanel() {
   const selectedNodeId = useUIStore((s) => s.selectedNodeId);
@@ -28,6 +30,8 @@ export function ConfigPanel() {
     : node.data.blockType === 'simulation' ? 'Simulation Config'
     : node.data.blockType === 'mpc'        ? 'MPC Config'
     : node.data.blockType === 'plant'      ? 'Plant Config'
+    : node.data.blockType === 'data'       ? 'Data Config'
+    : node.data.blockType === 'ann'        ? 'ANN Config'
     : 'Plot Config';
 
   return (
@@ -47,6 +51,8 @@ export function ConfigPanel() {
         {node.data.blockType === 'mpc' && <MpcPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'plant' && <PlantPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'plot' && <PlotPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'data' && <DataPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'ann' && <AnnPanel nodeId={selectedNodeId} />}
       </div>
     </aside>
   );

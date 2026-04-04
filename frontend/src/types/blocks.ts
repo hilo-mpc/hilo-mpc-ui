@@ -1,4 +1,4 @@
-export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot';
+export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot' | 'data' | 'ann';
 
 export interface Variable {
   name: string;
@@ -86,6 +86,40 @@ export interface PlantBlockData {
   flipped?: boolean;
 }
 
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+export interface DataBlockData {
+  blockType: 'data';
+  label: string;
+  fileName: string;
+  columns: string[];
+  rowCount: number;
+  csvContent: string;
+  inputCols: string[];
+  outputCols: string[];
+  configured: boolean;
+  flipped?: boolean;
+}
+
+// ── ANN ───────────────────────────────────────────────────────────────────────
+
+export interface AnnLayer {
+  units: number;
+  activation: 'relu' | 'tanh' | 'sigmoid' | 'linear';
+}
+
+export interface AnnBlockData {
+  blockType: 'ann';
+  label: string;
+  layers: AnnLayer[];
+  epochs: number;
+  batchSize: number;
+  learningRate: number;
+  trainSplit: number;
+  configured: boolean;
+  flipped?: boolean;
+}
+
 // ── Plot ──────────────────────────────────────────────────────────────────────
 
 export interface PlotBlockData {
@@ -100,7 +134,7 @@ export interface PlotBlockData {
 
 // ── Union ─────────────────────────────────────────────────────────────────────
 
-export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData;
+export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData | DataBlockData | AnnBlockData;
 
 // ── Default factories ─────────────────────────────────────────────────────────
 
@@ -159,6 +193,37 @@ export function defaultPlantData(): PlantBlockData {
     odeExpressions: [],
     measurementExpressions: [],
     measurementNames: [],
+    configured: false,
+  };
+}
+
+export function defaultDataData(): DataBlockData {
+  return {
+    blockType: 'data',
+    label: 'Data',
+    fileName: '',
+    columns: [],
+    rowCount: 0,
+    csvContent: '',
+    inputCols: [],
+    outputCols: [],
+    configured: false,
+  };
+}
+
+export function defaultAnnData(): AnnBlockData {
+  return {
+    blockType: 'ann',
+    label: 'ANN',
+    layers: [
+      { units: 64, activation: 'relu' },
+      { units: 32, activation: 'relu' },
+      { units: 1,  activation: 'linear' },
+    ],
+    epochs: 100,
+    batchSize: 32,
+    learningRate: 0.001,
+    trainSplit: 0.8,
     configured: false,
   };
 }

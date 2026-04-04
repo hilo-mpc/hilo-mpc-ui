@@ -44,6 +44,20 @@ const BLOCKS: BlockDef[] = [
     color: 'border-orange-700 bg-stone-800 hover:border-orange-500',
     headerColor: 'bg-orange-700',
   },
+  {
+    type: 'data',
+    label: 'Data',
+    description: 'Upload CSV data for ML training',
+    color: 'border-sky-700 bg-stone-800 hover:border-sky-500',
+    headerColor: 'bg-sky-700',
+  },
+  {
+    type: 'ann',
+    label: 'ANN',
+    description: 'Feedforward neural network (numpy)',
+    color: 'border-indigo-700 bg-stone-800 hover:border-indigo-500',
+    headerColor: 'bg-indigo-700',
+  },
 ];
 
 export function Sidebar() {
@@ -78,7 +92,7 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto px-3 py-3 border-t border-stone-700">
-        <p className="text-xs text-stone-600">Stage 2 — MPC</p>
+        <p className="text-xs text-stone-600">Stage 4 — ML</p>
       </div>
     </aside>
   );

@@ -16,6 +16,8 @@ import {
   defaultMpcData,
   defaultPlantData,
   defaultPlotData,
+  defaultDataData,
+  defaultAnnData,
 } from '../types/blocks';
 
 function makeDefaultData(type: BlockType): BlockData {
@@ -25,6 +27,8 @@ function makeDefaultData(type: BlockType): BlockData {
     case 'mpc': return defaultMpcData();
     case 'plant': return defaultPlantData();
     case 'plot': return defaultPlotData();
+    case 'data': return defaultDataData();
+    case 'ann': return defaultAnnData();
   }
 }
 

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, InputScheduleEntry } from '../types/blocks';
+import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, DataBlockData, AnnBlockData, InputScheduleEntry } from '../types/blocks';
 
 // ── Request shape matching the Python Pydantic models ─────────────────────────
 
@@ -184,6 +184,64 @@ export async function postMpc(req: MpcRequest): Promise<string> {
 
 export async function deleteMpc(runId: string): Promise<void> {
   await apiClient.delete(`/mpc/${runId}`);
+}
+
+// ── Train API ─────────────────────────────────────────────────────────────────
+
+interface BackendAnnLayer {
+  units: number;
+  activation: string;
+}
+
+interface TrainRequest {
+  diagram_id: string;
+  data_block: {
+    block_id: string;
+    csv_content: string;
+    input_cols: string[];
+    output_cols: string[];
+  };
+  ann_block: {
+    block_id: string;
+    layers: BackendAnnLayer[];
+    epochs: number;
+    batch_size: number;
+    learning_rate: number;
+    train_split: number;
+  };
+}
+
+export function buildTrainRequest(
+  diagramId: string,
+  data: DataBlockData,
+  ann: AnnBlockData,
+): TrainRequest {
+  return {
+    diagram_id: diagramId,
+    data_block: {
+      block_id: data.label,
+      csv_content: data.csvContent,
+      input_cols: data.inputCols,
+      output_cols: data.outputCols,
+    },
+    ann_block: {
+      block_id: ann.label,
+      layers: ann.layers.map((l) => ({ units: l.units, activation: l.activation })),
+      epochs: ann.epochs,
+      batch_size: ann.batchSize,
+      learning_rate: ann.learningRate,
+      train_split: ann.trainSplit,
+    },
+  };
+}
+
+export async function postTrain(req: TrainRequest): Promise<string> {
+  const resp = await apiClient.post<{ run_id: string }>('/train', req);
+  return resp.data.run_id;
+}
+
+export async function deleteTrain(runId: string): Promise<void> {
+  await apiClient.delete(`/train/${runId}`);
 }
 
 export async function validateEquations(

@@ -58,6 +58,8 @@ export function PlotPanel({ nodeId }: Props) {
         ...plantData.measurementNames.map((m) => m.name).filter((n) => n.trim()),
       ];
     }
+  } else if (sourceType === 'ann') {
+    availableVars = ['train_loss', 'val_loss'];
   } else if (sourceType === 'plant') {
     // Direct plant-states-out connection: plant drives the series (via its MPC)
     const plantData = sourceNode!.data as PlantBlockData;

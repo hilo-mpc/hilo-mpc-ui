@@ -4,6 +4,8 @@ import { SimulationNode } from './SimulationNode';
 import { MpcNode } from './MpcNode';
 import { PlantNode } from './PlantNode';
 import { PlotNode } from './PlotNode';
+import { DataNode } from './DataNode';
+import { AnnNode } from './AnnNode';
 
 export const nodeTypes: NodeTypes = {
   model: ModelNode as any,
@@ -11,4 +13,6 @@ export const nodeTypes: NodeTypes = {
   mpc: MpcNode as any,
   plant: PlantNode as any,
   plot: PlotNode as any,
+  data: DataNode as any,
+  ann: AnnNode as any,
 };
