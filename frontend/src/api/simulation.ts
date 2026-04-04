@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, DataBlockData, AnnBlockData, TrainedModelState, InputScheduleEntry } from '../types/blocks';
+import type { ModelBlockData, SimulationBlockData, PlotBlockData, MpcBlockData, PlantBlockData, DataBlockData, AnnBlockData, MheBlockData, TrainedModelState, InputScheduleEntry } from '../types/blocks';
 
 // ── Request shape matching the Python Pydantic models ─────────────────────────
 
@@ -242,6 +242,77 @@ export async function postTrain(req: TrainRequest): Promise<string> {
 
 export async function deleteTrain(runId: string): Promise<void> {
   await apiClient.delete(`/train/${runId}`);
+}
+
+// ── MHE API ───────────────────────────────────────────────────────────────────
+
+interface BackendMheBlock {
+  block_id: string;
+  horizon: number;
+  dt: number;
+  process_noise: Record<string, number>;
+  measurement_noise: Record<string, number>;
+  arrival_cost: Record<string, number>;
+  initial_guess: Record<string, number>;
+}
+
+interface MheRequest {
+  diagram_id: string;
+  model_block: BackendModelBlock & {
+    measurement_expressions: string[];
+    measurement_names: string[];
+  };
+  data_block: {
+    block_id: string;
+    csv_content: string;
+    input_cols: string[];
+    output_cols: string[];
+  };
+  mhe_block: BackendMheBlock;
+}
+
+export function buildMheRequest(
+  diagramId: string,
+  model: ModelBlockData,
+  data: DataBlockData,
+  mhe: MheBlockData,
+): MheRequest {
+  return {
+    diagram_id: diagramId,
+    model_block: {
+      block_id: 'model',
+      states: model.states,
+      inputs: model.inputs,
+      parameters: model.parameters.map((p) => ({ name: p.name, value: p.value })),
+      ode_expressions: model.odeExpressions,
+      measurement_expressions: model.measurementExpressions,
+      measurement_names: model.measurementNames.map((m) => m.name),
+    },
+    data_block: {
+      block_id: data.label,
+      csv_content: data.csvContent,
+      input_cols: data.inputCols,
+      output_cols: data.outputCols,
+    },
+    mhe_block: {
+      block_id: mhe.label,
+      horizon: mhe.horizon,
+      dt: mhe.dt,
+      process_noise: mhe.processNoise,
+      measurement_noise: mhe.measurementNoise,
+      arrival_cost: mhe.arrivalCost,
+      initial_guess: mhe.initialGuess,
+    },
+  };
+}
+
+export async function postMhe(req: MheRequest): Promise<string> {
+  const resp = await apiClient.post<{ run_id: string }>('/mhe', req);
+  return resp.data.run_id;
+}
+
+export async function deleteMhe(runId: string): Promise<void> {
+  await apiClient.delete(`/mhe/${runId}`);
 }
 
 // ── Predict API ───────────────────────────────────────────────────────────────

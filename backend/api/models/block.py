@@ -20,6 +20,8 @@ class ModelBlockConfig(BaseModel):
     inputs: list[Variable]
     parameters: list[Parameter] = []
     ode_expressions: list[str]  # one CasADi expression per state
+    measurement_expressions: list[str] = []  # h(x) — empty means full state observation
+    measurement_names: list[str] = []         # user-defined names for each y_i
 
 
 class InputScheduleEntry(BaseModel):

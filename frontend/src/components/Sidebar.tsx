@@ -65,6 +65,13 @@ const BLOCKS: BlockDef[] = [
     color: 'border-emerald-700 bg-stone-800 hover:border-emerald-500',
     headerColor: 'bg-emerald-700',
   },
+  {
+    type: 'mhe',
+    label: 'MHE',
+    description: 'Moving Horizon Estimator — estimate states from noisy measurements',
+    color: 'border-fuchsia-700 bg-stone-800 hover:border-fuchsia-500',
+    headerColor: 'bg-fuchsia-700',
+  },
 ];
 
 export function Sidebar() {

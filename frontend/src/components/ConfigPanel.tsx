@@ -8,6 +8,7 @@ import { PlotPanel } from '../panels/PlotPanel';
 import { DataPanel } from '../panels/DataPanel';
 import { AnnPanel } from '../panels/AnnPanel';
 import { FunctionPanel } from '../panels/FunctionPanel';
+import { MhePanel } from '../panels/MhePanel';
 
 export function ConfigPanel() {
   const selectedNodeId = useUIStore((s) => s.selectedNodeId);
@@ -34,6 +35,7 @@ export function ConfigPanel() {
     : node.data.blockType === 'data'       ? 'Data Config'
     : node.data.blockType === 'ann'        ? 'ANN Config'
     : node.data.blockType === 'function'   ? 'Function Config'
+    : node.data.blockType === 'mhe'        ? 'MHE Config'
     : 'Plot Config';
 
   return (
@@ -56,6 +58,7 @@ export function ConfigPanel() {
         {node.data.blockType === 'data' && <DataPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'ann' && <AnnPanel nodeId={selectedNodeId} />}
         {node.data.blockType === 'function' && <FunctionPanel nodeId={selectedNodeId} />}
+        {node.data.blockType === 'mhe' && <MhePanel nodeId={selectedNodeId} />}
       </div>
     </aside>
   );

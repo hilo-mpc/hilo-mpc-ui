@@ -19,6 +19,7 @@ import {
   defaultDataData,
   defaultAnnData,
   defaultFunctionData,
+  defaultMheData,
 } from '../types/blocks';
 
 function makeDefaultData(type: BlockType): BlockData {
@@ -31,6 +32,7 @@ function makeDefaultData(type: BlockType): BlockData {
     case 'data': return defaultDataData();
     case 'ann': return defaultAnnData();
     case 'function': return defaultFunctionData();
+    case 'mhe': return defaultMheData();
   }
 }
 

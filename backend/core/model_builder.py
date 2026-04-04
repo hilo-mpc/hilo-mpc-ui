@@ -22,4 +22,9 @@ def build_model(cfg: ModelBlockConfig | PlantBlockConfig) -> Model:
 
     model.set_dynamical_equations(cfg.ode_expressions)
 
+    # Measurement equations — defined on ModelBlockConfig for MHE use
+    meas_exprs = getattr(cfg, 'measurement_expressions', [])
+    if meas_exprs:
+        model.set_measurement_equations(meas_exprs)
+
     return model

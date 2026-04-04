@@ -75,6 +75,14 @@ export function PlotPanel({ nodeId }: Props) {
   } else if (sourceType === 'function') {
     const fnData = sourceNode!.data as FunctionBlockData;
     availableVars = fnData.outputs.map((o) => o.name);
+  } else if (sourceType === 'mhe') {
+    // Find Model connected to MHE
+    const modelEdge = edges.find(
+      (e) => e.target === sourceNode!.id && e.targetHandle === 'mhe-model-in'
+    );
+    const modelNode = modelEdge ? nodes.find((n) => n.id === modelEdge.source) : undefined;
+    const modelData = modelNode?.data.blockType === 'model' ? (modelNode.data as ModelBlockData) : null;
+    availableVars = modelData?.states.map((s) => s.name) ?? [];
   } else if (sourceType === 'plant') {
     // Direct plant-states-out connection: plant drives the series (via its MPC)
     const plantData = sourceNode!.data as PlantBlockData;

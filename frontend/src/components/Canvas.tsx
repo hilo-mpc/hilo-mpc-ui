@@ -22,11 +22,13 @@ import type { BlockType } from '../types/blocks';
 const VALID_CONNECTIONS: Record<string, string[]> = {
   'sim-model-in':       ['model-out'],
   'mpc-model-in':       ['model-out'],
-  'mpc-measurement-in': ['plant-measurement-out'],
+  'mpc-measurement-in': ['plant-measurement-out', 'mhe-states-out'],
   'plant-control-in':   ['mpc-control-out'],
-  'plot-data-in':       ['sim-results-out', 'mpc-results-out', 'plant-states-out', 'ann-results-out', 'fn-output'],
+  'plot-data-in':       ['sim-results-out', 'mpc-results-out', 'plant-states-out', 'ann-results-out', 'fn-output', 'mhe-states-out'],
   'ann-data-in':        ['data-out'],
   'fn-input':           ['data-out'],
+  'mhe-model-in':       ['model-out'],
+  'mhe-data-in':        ['data-out'],
 };
 
 const isValidConnection: IsValidConnection = (connection: Connection) => {
@@ -138,6 +140,7 @@ export function Canvas() {
               case 'data': return '#0369a1';
               case 'ann': return '#4338ca';
               case 'function': return '#065f46';
+              case 'mhe': return '#86198f';
               default: return '#57534e';
             }
           }}

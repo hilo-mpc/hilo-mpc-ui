@@ -1,4 +1,4 @@
-export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot' | 'data' | 'ann' | 'function';
+export type BlockType = 'model' | 'simulation' | 'mpc' | 'plant' | 'plot' | 'data' | 'ann' | 'function' | 'mhe';
 
 export interface Variable {
   name: string;
@@ -29,6 +29,10 @@ export interface ModelBlockData {
   parameters: Parameter[];
   /** One CasADi expression per state — maps directly to hilo-mpc set_dynamical_equations() */
   odeExpressions: string[];
+  /** h(x) measurement equations — used by MHE. Empty = full state observation. */
+  measurementExpressions: string[];
+  /** User-defined name for each measurement output y_i */
+  measurementNames: Variable[];
   configured: boolean;
   flipped?: boolean;
 }
@@ -133,6 +137,21 @@ export interface AnnBlockData {
   flipped?: boolean;
 }
 
+// ── MHE ───────────────────────────────────────────────────────────────────────
+
+export interface MheBlockData {
+  blockType: 'mhe';
+  label: string;
+  horizon: number;
+  dt: number;
+  processNoise: Record<string, number>;     // state name → Q weight
+  measurementNoise: Record<string, number>; // meas name → R weight
+  arrivalCost: Record<string, number>;      // state name → P0 weight
+  initialGuess: Record<string, number>;     // state name → initial value
+  configured: boolean;
+  flipped?: boolean;
+}
+
 // ── Function ──────────────────────────────────────────────────────────────────
 
 export interface FunctionOutput {
@@ -163,7 +182,7 @@ export interface PlotBlockData {
 
 // ── Union ─────────────────────────────────────────────────────────────────────
 
-export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData | DataBlockData | AnnBlockData | FunctionBlockData;
+export type BlockData = ModelBlockData | SimulationBlockData | MpcBlockData | PlantBlockData | PlotBlockData | DataBlockData | AnnBlockData | FunctionBlockData | MheBlockData;
 
 // ── Default factories ─────────────────────────────────────────────────────────
 
@@ -175,6 +194,22 @@ export function defaultModelData(): ModelBlockData {
     inputs: [],
     parameters: [],
     odeExpressions: [],
+    measurementExpressions: [],
+    measurementNames: [],
+    configured: false,
+  };
+}
+
+export function defaultMheData(): MheBlockData {
+  return {
+    blockType: 'mhe',
+    label: 'MHE',
+    horizon: 10,
+    dt: 0.1,
+    processNoise: {},
+    measurementNoise: {},
+    arrivalCost: {},
+    initialGuess: {},
     configured: false,
   };
 }
