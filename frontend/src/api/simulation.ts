@@ -315,6 +315,82 @@ export async function deleteMhe(runId: string): Promise<void> {
   await apiClient.delete(`/mhe/${runId}`);
 }
 
+// ── MHE-MPC combined online API ───────────────────────────────────────────────
+
+interface MheMpcRequest {
+  diagram_id: string;
+  model_block: BackendModelBlock & {
+    measurement_expressions: string[];
+    measurement_names: string[];
+  };
+  plant_block: BackendPlantBlock;
+  mhe_block: BackendMheBlock;
+  mpc_block: BackendMpcBlock;
+}
+
+export function buildMheMpcRequest(
+  diagramId: string,
+  model: ModelBlockData,
+  plant: PlantBlockData,
+  mhe: MheBlockData,
+  mpc: MpcBlockData,
+): MheMpcRequest {
+  return {
+    diagram_id: diagramId,
+    model_block: {
+      block_id: 'model',
+      states: model.states,
+      inputs: model.inputs,
+      parameters: model.parameters.map((p) => ({ name: p.name, value: p.value })),
+      ode_expressions: model.odeExpressions,
+      measurement_expressions: model.measurementExpressions,
+      measurement_names: model.measurementNames.map((m) => m.name),
+    },
+    plant_block: {
+      block_id: 'plant',
+      states: plant.states,
+      inputs: plant.inputs,
+      parameters: plant.parameters.map((p) => ({ name: p.name, value: p.value })),
+      ode_expressions: plant.odeExpressions,
+      measurement_expressions: plant.measurementExpressions,
+      measurement_names: plant.measurementNames.map((m) => m.name),
+    },
+    mhe_block: {
+      block_id: mhe.label,
+      horizon: mhe.horizon,
+      dt: mhe.dt,
+      process_noise: mhe.processNoise,
+      measurement_noise: mhe.measurementNoise,
+      arrival_cost: mhe.arrivalCost,
+      initial_guess: mhe.initialGuess,
+    },
+    mpc_block: {
+      block_id: mpc.label,
+      horizon: mpc.horizon,
+      dt: mpc.dt,
+      t_end: mpc.tEnd,
+      initial_conditions: mpc.initialConditions,
+      state_weights: mpc.stateWeights,
+      input_weights: mpc.inputWeights,
+      state_ref: mpc.stateRef,
+      input_ref: mpc.inputRef,
+      state_lb: mpc.stateLb,
+      state_ub: mpc.stateUb,
+      input_lb: mpc.inputLb,
+      input_ub: mpc.inputUb,
+    },
+  };
+}
+
+export async function postMheMpc(req: MheMpcRequest): Promise<string> {
+  const resp = await apiClient.post<{ run_id: string }>('/mhe-mpc', req);
+  return resp.data.run_id;
+}
+
+export async function deleteMheMpc(runId: string): Promise<void> {
+  await apiClient.delete(`/mhe-mpc/${runId}`);
+}
+
 // ── Predict API ───────────────────────────────────────────────────────────────
 
 interface PredictRequest {

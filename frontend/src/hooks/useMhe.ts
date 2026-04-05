@@ -3,7 +3,17 @@ import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
 import { buildMheRequest, postMhe, deleteMhe } from '../api/simulation';
 import { SimulationWebSocket } from '../api/websocket';
-import type { ModelBlockData, DataBlockData, MheBlockData } from '../types/blocks';
+import type { ModelBlockData, DataBlockData, MheBlockData, PlantBlockData } from '../types/blocks';
+import type { TimeSeriesPoint } from '../types/simulation';
+
+/** Convert a run series to CSV. Columns that are missing from a row get empty string. */
+function seriesToCsv(series: TimeSeriesPoint[], cols: string[]): string {
+  const header = cols.join(',');
+  const rows = series.map((pt) =>
+    cols.map((c) => (pt.values[c] != null ? String(pt.values[c]) : '')).join(',')
+  );
+  return [header, ...rows].join('\n');
+}
 
 export function useMhe(nodeId: string) {
   const wsRef = useRef<SimulationWebSocket | null>(null);
@@ -27,6 +37,7 @@ export function useMhe(nodeId: string) {
       }
       const mheData = mheNode.data as MheBlockData;
 
+      // ── Find connected Model ───────────────────────────────────────────────
       const modelEdge = edges.find((e) => e.target === nodeId && e.targetHandle === 'mhe-model-in');
       const modelNode = modelEdge ? nodes.find((n) => n.id === modelEdge.source) : undefined;
       const modelBlock = modelNode?.data.blockType === 'model' ? (modelNode.data as ModelBlockData) : null;
@@ -38,35 +49,98 @@ export function useMhe(nodeId: string) {
       if (modelBlock.measurementExpressions.length === 0) {
         useSimulationStore.getState().failRun(
           nodeId,
-          'The Model block has no measurement equations h(x). Add them in the Model config panel.'
+          'The Model has no measurement equations h(x). Add them in the Model config (▸ Measurement equations y = h(x)).'
         );
         return;
       }
 
+      // ── Find data source: Data block or Plant block ────────────────────────
       const dataEdge = edges.find((e) => e.target === nodeId && e.targetHandle === 'mhe-data-in');
-      const dataNode = dataEdge ? nodes.find((n) => n.id === dataEdge.source) : undefined;
-      const dataBlock = dataNode?.data.blockType === 'data' ? (dataNode.data as DataBlockData) : null;
+      const dataSourceNode = dataEdge ? nodes.find((n) => n.id === dataEdge.source) : undefined;
 
-      if (!dataBlock?.csvContent) {
-        useSimulationStore.getState().failRun(nodeId, 'No Data block connected to mhe-data-in.');
-        return;
-      }
-      if (dataBlock.outputCols.length === 0) {
+      let virtualData: { csvContent: string; inputCols: string[]; outputCols: string[] } | null = null;
+
+      if (dataSourceNode?.data.blockType === 'data') {
+        // ── Case 1: CSV Data block ─────────────────────────────────────────
+        const dataBlock = dataSourceNode.data as DataBlockData;
+        if (!dataBlock.csvContent) {
+          useSimulationStore.getState().failRun(nodeId, 'Data block has no CSV loaded.');
+          return;
+        }
+        if (dataBlock.outputCols.length === 0) {
+          useSimulationStore.getState().failRun(
+            nodeId,
+            'Data block has no Y (output) columns assigned — these are used as measurements.'
+          );
+          return;
+        }
+        if (dataBlock.outputCols.length !== modelBlock.measurementExpressions.length) {
+          useSimulationStore.getState().failRun(
+            nodeId,
+            `Data Y columns (${dataBlock.outputCols.length}) must match Model measurement equations (${modelBlock.measurementExpressions.length}).`
+          );
+          return;
+        }
+        virtualData = {
+          csvContent: dataBlock.csvContent,
+          inputCols: dataBlock.inputCols,
+          outputCols: dataBlock.outputCols,
+        };
+
+      } else if (dataSourceNode?.data.blockType === 'plant') {
+        // ── Case 2: Plant block (use its MPC simulation series) ────────────
+        const plantBlock = dataSourceNode.data as PlantBlockData;
+
+        // Find the MPC node that drives this plant (plant-measurement-out → mpc-measurement-in)
+        const mpcMeasEdge = edges.find(
+          (e) => e.source === dataSourceNode.id && e.sourceHandle === 'plant-measurement-out'
+        );
+        const mpcNodeId = mpcMeasEdge?.target ?? null;
+        const runs = useSimulationStore.getState().runs;
+        const plantSeries = mpcNodeId ? (runs[mpcNodeId]?.series ?? []) : [];
+
+        if (plantSeries.length === 0) {
+          useSimulationStore.getState().failRun(
+            nodeId,
+            'No simulation data from the Plant yet. Run the MPC simulation first.'
+          );
+          return;
+        }
+
+        // Measurement columns: custom names if defined, otherwise all state names (full state obs)
+        const measCols =
+          plantBlock.measurementNames.length > 0
+            ? plantBlock.measurementNames.map((m) => m.name).filter(Boolean)
+            : plantBlock.states.map((s) => s.name);
+
+        // Input columns from plant inputs
+        const inputCols = plantBlock.inputs.map((i) => i.name);
+
+        if (measCols.length !== modelBlock.measurementExpressions.length) {
+          useSimulationStore.getState().failRun(
+            nodeId,
+            `Plant has ${measCols.length} measurement(s) but Model has ${modelBlock.measurementExpressions.length} measurement equation(s). They must match.`
+          );
+          return;
+        }
+
+        const allCols = [...measCols, ...inputCols];
+        virtualData = {
+          csvContent: seriesToCsv(plantSeries, allCols),
+          inputCols: inputCols,
+          outputCols: measCols,
+        };
+
+      } else {
         useSimulationStore.getState().failRun(
           nodeId,
-          'Data block has no output (Y) columns assigned — these are used as measurements.'
+          'No data source connected to mhe-data-in. Connect a Data block or Plant block.'
         );
         return;
       }
-      if (dataBlock.outputCols.length !== modelBlock.measurementExpressions.length) {
-        useSimulationStore.getState().failRun(
-          nodeId,
-          `Data block has ${dataBlock.outputCols.length} Y column(s) but Model has ${modelBlock.measurementExpressions.length} measurement equation(s). They must match.`
-        );
-        return;
-      }
 
-      const req = buildMheRequest(nodeId, modelBlock, dataBlock, mheData);
+      // ── Build and send request ─────────────────────────────────────────────
+      const req = buildMheRequest(nodeId, modelBlock, virtualData as DataBlockData, mheData);
 
       let runId: string;
       try {

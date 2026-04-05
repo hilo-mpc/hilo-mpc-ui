@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { TimeSeriesPoint, SimRun } from '../types/simulation';
+import { useLogStore } from './logStore';
 
 function defaultRun(): SimRun {
   return { status: 'idle', runId: null, series: [], error: null, elapsedSeconds: null };
@@ -44,6 +45,8 @@ export const useSimulationStore = create<SimulationStore>((set, get) => {
         const existing = s.runs[nodeId];
         if (existing?.status === 'queued' || existing?.status === 'running') return s;
 
+        useLogStore.getState().log('info', 'Run started', nodeId);
+
         if (s.activeNodeId === null) {
           // Nothing running — start immediately
           return {
@@ -78,6 +81,7 @@ export const useSimulationStore = create<SimulationStore>((set, get) => {
           [nodeId]: { ...s.runs[nodeId], status: 'completed', elapsedSeconds: elapsed },
         },
       }));
+      useLogStore.getState().log('success', `Run completed in ${elapsed.toFixed(2)}s`, nodeId);
       advance();
     },
 
@@ -88,6 +92,9 @@ export const useSimulationStore = create<SimulationStore>((set, get) => {
           [nodeId]: { ...s.runs[nodeId], status: 'failed', error },
         },
       }));
+      if (error !== 'Cancelled by user') {
+        useLogStore.getState().log('error', error, nodeId);
+      }
       advance();
     },
 

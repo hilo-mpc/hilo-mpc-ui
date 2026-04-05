@@ -54,9 +54,17 @@ async def run_mpc(
     pred_model = build_model(req.model_block)
     pred_model.setup(dt=mpc_cfg.dt, integrator="rk4")
 
-    pred_state_names = [s.name for s in req.model_block.states]
-    input_names = [i.name for i in req.model_block.inputs]
+    pred_state_names = [s.name for s in req.model_block.states if s.name.strip()]
+    input_names = [i.name for i in req.model_block.inputs if i.name.strip()]
     n_inputs = len(input_names)
+
+    if not pred_state_names:
+        raise ValueError("Prediction model has no states. Add at least one state in the Model block.")
+    if len(pred_state_names) != len(req.model_block.ode_expressions):
+        raise ValueError(
+            f"Model state count ({len(pred_state_names)}) does not match ODE expression count "
+            f"({len(req.model_block.ode_expressions)}). Ensure each state has an ODE."
+        )
 
     nmpc = NMPC(pred_model)
     nmpc.horizon = mpc_cfg.horizon
@@ -99,7 +107,12 @@ async def run_mpc(
 
     # ── 2. Build plant model ──────────────────────────────────────────────────
     plant_cfg = req.plant_block
-    plant_model = build_model(plant_cfg)   # PlantBlockConfig has same fields as ModelBlockConfig
+    # Strip measurement expressions: we evaluate them ourselves via _build_measurement_fn,
+    # so there is no need (and no benefit) to pass them to hilo-mpc's parser.
+    from copy import copy as _copy
+    plant_cfg_no_meas = _copy(plant_cfg)
+    plant_cfg_no_meas.measurement_expressions = []
+    plant_model = build_model(plant_cfg_no_meas)
     plant_model.setup(dt=mpc_cfg.dt, integrator="rk4")
 
     plant_state_names = [s.name for s in plant_cfg.states]

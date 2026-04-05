@@ -51,18 +51,51 @@ export function PlotPanel({ nodeId }: Props) {
     const modelData = modelNode?.data.blockType === 'model' ? (modelNode.data as ModelBlockData) : null;
     availableVars = modelData?.states.map((s) => s.name) ?? [];
   } else if (sourceType === 'mpc') {
-    // Find Plant connected to MPC measurement input
-    const plantEdge = edges.find(
-      (e) => e.target === sourceNode!.id && e.targetHandle === 'mpc-measurement-in'
+    const mpcNode = sourceNode!;
+
+    // Check if MHE is connected to mpc-measurement-in (online MHE-MPC mode)
+    const measEdge = edges.find(
+      (e) => e.target === mpcNode.id && e.targetHandle === 'mpc-measurement-in'
     );
-    const plantNode = plantEdge ? nodes.find((n) => n.id === plantEdge.source) : undefined;
-    const plantData = plantNode?.data.blockType === 'plant' ? (plantNode.data as PlantBlockData) : null;
-    if (plantData) {
+    const measSourceNode = measEdge ? nodes.find((n) => n.id === measEdge.source) : undefined;
+
+    if (measSourceNode?.data.blockType === 'mhe') {
+      // MHE-MPC: estimated states + plant_* true states + inputs
+      const mheModelEdge = edges.find(
+        (e) => e.target === measSourceNode.id && e.targetHandle === 'mhe-model-in'
+      );
+      const mheModelNode = mheModelEdge ? nodes.find((n) => n.id === mheModelEdge.source) : undefined;
+      const mheModelData = mheModelNode?.data.blockType === 'model' ? (mheModelNode.data as ModelBlockData) : null;
+      const estStateNames = mheModelData?.states.map((s) => s.name) ?? [];
+
+      // Plant block (via mpc-control-out)
+      const controlEdge = edges.find(
+        (e) => e.source === mpcNode.id && e.sourceHandle === 'mpc-control-out'
+      );
+      const plantNode2 = controlEdge ? nodes.find((n) => n.id === controlEdge.target) : undefined;
+      const plantData2 = plantNode2?.data.blockType === 'plant' ? (plantNode2.data as PlantBlockData) : null;
+
       availableVars = [
-        ...plantData.states.map((s) => s.name),
-        ...plantData.inputs.map((i) => i.name),
-        ...plantData.measurementNames.map((m) => m.name).filter((n) => n.trim()),
+        ...estStateNames,
+        ...(plantData2?.states.map((s) => `plant_${s.name}`) ?? []),
+        ...(plantData2?.inputs.map((i) => i.name) ?? []),
       ];
+    } else {
+      // Standard MPC: plant connected directly to mpc-measurement-in
+      const plantNode = measSourceNode?.data.blockType === 'plant'
+        ? measSourceNode
+        : (() => {
+            const ce = edges.find((e) => e.source === mpcNode.id && e.sourceHandle === 'mpc-control-out');
+            return ce ? nodes.find((n) => n.id === ce.target) : undefined;
+          })();
+      const plantData = plantNode?.data.blockType === 'plant' ? (plantNode.data as PlantBlockData) : null;
+      if (plantData) {
+        availableVars = [
+          ...plantData.states.map((s) => s.name),
+          ...plantData.inputs.map((i) => i.name),
+          ...plantData.measurementNames.map((m) => m.name).filter((n) => n.trim()),
+        ];
+      }
     }
   } else if (sourceType === 'ann') {
     if (isFnOutput) {

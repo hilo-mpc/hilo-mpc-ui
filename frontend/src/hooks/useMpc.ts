@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
-import { buildMpcRequest, postMpc, deleteMpc } from '../api/simulation';
+import {
+  buildMpcRequest, postMpc, deleteMpc,
+  buildMheMpcRequest, postMheMpc, deleteMheMpc,
+} from '../api/simulation';
 import { SimulationWebSocket } from '../api/websocket';
-import type { ModelBlockData, PlantBlockData, MpcBlockData } from '../types/blocks';
+import type { ModelBlockData, PlantBlockData, MpcBlockData, MheBlockData } from '../types/blocks';
 
 function findConnectedModel(
   mpcNodeId: string,
@@ -24,13 +27,54 @@ function findConnectedPlant(
   nodes: ReturnType<typeof useDiagramStore.getState>['nodes'],
   edges: ReturnType<typeof useDiagramStore.getState>['edges']
 ): PlantBlockData | null {
-  const edge = edges.find(
+  // Primary: plant-measurement-out → mpc-measurement-in (direct plant feedback)
+  const measEdge = edges.find(
     (e) => e.target === mpcNodeId && e.targetHandle === 'mpc-measurement-in'
   );
-  if (!edge) return null;
-  const node = nodes.find((n) => n.id === edge.source);
-  if (!node || node.data.blockType !== 'plant') return null;
-  return node.data as PlantBlockData;
+  if (measEdge) {
+    const node = nodes.find((n) => n.id === measEdge.source);
+    if (node?.data.blockType === 'plant') return node.data as PlantBlockData;
+  }
+
+  // Fallback: mpc-control-out → plant-control-in (MHE is the measurement source,
+  // but we still need the plant for closed-loop simulation)
+  const controlEdge = edges.find(
+    (e) => e.source === mpcNodeId && e.sourceHandle === 'mpc-control-out'
+  );
+  if (controlEdge) {
+    const node = nodes.find((n) => n.id === controlEdge.target);
+    if (node?.data.blockType === 'plant') return node.data as PlantBlockData;
+  }
+
+  return null;
+}
+
+/** Find an MHE block connected to mpc-measurement-in (if any). */
+function findConnectedMhe(
+  mpcNodeId: string,
+  nodes: ReturnType<typeof useDiagramStore.getState>['nodes'],
+  edges: ReturnType<typeof useDiagramStore.getState>['edges']
+): { mheData: MheBlockData; mheModelData: ModelBlockData } | null {
+  const measEdge = edges.find(
+    (e) => e.target === mpcNodeId && e.targetHandle === 'mpc-measurement-in'
+  );
+  if (!measEdge) return null;
+
+  const mheNode = nodes.find((n) => n.id === measEdge.source);
+  if (!mheNode || mheNode.data.blockType !== 'mhe') return null;
+
+  // Find the Model connected to the MHE block
+  const mheModelEdge = edges.find(
+    (e) => e.target === mheNode.id && e.targetHandle === 'mhe-model-in'
+  );
+  if (!mheModelEdge) return null;
+  const mheModelNode = nodes.find((n) => n.id === mheModelEdge.source);
+  if (!mheModelNode || mheModelNode.data.blockType !== 'model') return null;
+
+  return {
+    mheData: mheNode.data as MheBlockData,
+    mheModelData: mheModelNode.data as ModelBlockData,
+  };
 }
 
 export function useMpc(nodeId: string) {
@@ -57,24 +101,45 @@ export function useMpc(nodeId: string) {
       const mpcData = mpcNode.data as MpcBlockData;
       const modelData = findConnectedModel(nodeId, nodes, edges);
       const plantData = findConnectedPlant(nodeId, nodes, edges);
+      const mheInfo = findConnectedMhe(nodeId, nodes, edges);
 
       if (!modelData) {
         useSimulationStore.getState().failRun(nodeId, 'No Model block connected to MPC.');
         return;
       }
       if (!plantData) {
-        useSimulationStore.getState().failRun(nodeId, 'No Plant block connected to MPC (measurement input).');
+        useSimulationStore.getState().failRun(
+          nodeId,
+          'No Plant block found. Connect a Plant block to mpc-measurement-in (direct feedback) or to mpc-control-out (when MHE is in the loop).'
+        );
         return;
       }
 
-      const req = buildMpcRequest(nodeId, modelData, plantData, mpcData);
-
+      // Decide which endpoint to call
       let runId: string;
-      try {
-        runId = await postMpc(req);
-      } catch (err: any) {
-        useSimulationStore.getState().failRun(nodeId, err?.message ?? 'Failed to start MPC.');
-        return;
+      let wsType: 'mpc' | 'mhe-mpc';
+
+      if (mheInfo) {
+        // Online MHE-MPC: use the combined endpoint
+        // Use the MHE's model for estimation (may differ from MPC prediction model)
+        const req = buildMheMpcRequest(nodeId, mheInfo.mheModelData, plantData, mheInfo.mheData, mpcData);
+        try {
+          runId = await postMheMpc(req);
+          wsType = 'mhe-mpc';
+        } catch (err: any) {
+          useSimulationStore.getState().failRun(nodeId, err?.message ?? 'Failed to start MHE-MPC.');
+          return;
+        }
+      } else {
+        // Standard MPC (direct plant feedback or no MHE)
+        const req = buildMpcRequest(nodeId, modelData, plantData, mpcData);
+        try {
+          runId = await postMpc(req);
+          wsType = 'mpc';
+        } catch (err: any) {
+          useSimulationStore.getState().failRun(nodeId, err?.message ?? 'Failed to start MPC.');
+          return;
+        }
       }
 
       useSimulationStore.getState().setRunId(nodeId, runId);
@@ -92,7 +157,7 @@ export function useMpc(nodeId: string) {
           }
         },
         () => {},
-        'mpc'
+        wsType,
       );
       wsRef.current.connect();
     }
@@ -119,7 +184,9 @@ export function useMpc(nodeId: string) {
 
     wsRef.current?.close();
     if (runState?.runId) {
+      // Try both endpoints (only one will match)
       try { await deleteMpc(runState.runId); } catch {}
+      try { await deleteMheMpc(runState.runId); } catch {}
     }
     store.failRun(nodeId, 'Cancelled by user');
   }, [nodeId]);

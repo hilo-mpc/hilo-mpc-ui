@@ -28,7 +28,7 @@ const VALID_CONNECTIONS: Record<string, string[]> = {
   'ann-data-in':        ['data-out'],
   'fn-input':           ['data-out'],
   'mhe-model-in':       ['model-out'],
-  'mhe-data-in':        ['data-out'],
+  'mhe-data-in':        ['data-out', 'plant-measurement-out'],
 };
 
 const isValidConnection: IsValidConnection = (connection: Connection) => {

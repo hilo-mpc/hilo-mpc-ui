@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import health, simulate, validate, mpc, train, ml, mhe
+from api.routes import health, simulate, validate, mpc, train, ml, mhe, mhe_mpc
 
 app = FastAPI(title="hilo-mpc-ui backend", version="0.1.0")
 
@@ -19,3 +19,4 @@ app.include_router(mpc.router)
 app.include_router(train.router)
 app.include_router(ml.router)
 app.include_router(mhe.router)
+app.include_router(mhe_mpc.router)

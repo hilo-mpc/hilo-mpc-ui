@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { ConfigPanel } from './components/ConfigPanel';
 import { Toolbar } from './components/Toolbar';
 import { StatusBar } from './components/StatusBar';
+import { Terminal } from './components/Terminal';
 import { LandingPage } from './components/LandingPage';
 import { useProjectStore } from './store/projectStore';
 import { useDiagramStore } from './store/diagramStore';
@@ -48,6 +49,7 @@ export default function App() {
           <Canvas />
           <ConfigPanel />
         </div>
+        <Terminal />
         <StatusBar />
       </div>
     </ReactFlowProvider>

@@ -18,6 +18,7 @@ export function ModelPanel({ nodeId }: Props) {
 
   const [validationMsg, setValidationMsg] = useState<string | null>(null);
   const [validationOk, setValidationOk] = useState<boolean | null>(null);
+  const [showMeasurements, setShowMeasurements] = useState(false);
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Recompute `configured`
@@ -280,60 +281,62 @@ export function ModelPanel({ nodeId }: Props) {
         )}
       </section>
 
-      {/* Measurement equations h(x) — for MHE */}
+      {/* Measurement equations h(x) — for MHE (same pattern as Plant) */}
       <section>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-stone-300 uppercase tracking-wider">
-            Measurements h(x)
-          </span>
-          <button className="text-xs text-rose-400 hover:text-rose-300" onClick={addMeasurement}>
-            + Add
-          </button>
-        </div>
-        {data.measurementNames.length === 0 ? (
-          <p className="text-stone-500 italic text-xs">
-            No measurements — optional, required for MHE
-          </p>
-        ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-stone-500">
-                <th className="text-left pb-1 w-1/3">Name</th>
-                <th className="text-left pb-1">h(x, p)</th>
-                <th className="pb-1 w-6" />
-              </tr>
-            </thead>
-            <tbody>
-              {data.measurementNames.map((m, i) => (
-                <tr key={i} className="group">
-                  <td className="pr-1 pb-1">
-                    <input
-                      className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white"
-                      placeholder="y1"
-                      value={m.name}
-                      onChange={(e) => setMeasurement(i, e.target.value, data.measurementExpressions[i] ?? '')}
-                    />
-                  </td>
-                  <td className="pr-1 pb-1">
-                    <input
-                      className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white font-mono"
-                      placeholder="x1"
-                      value={data.measurementExpressions[i] ?? ''}
-                      onChange={(e) => setMeasurement(i, m.name, e.target.value)}
-                    />
-                  </td>
-                  <td className="pb-1 text-center">
-                    <button
-                      className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400"
-                      onClick={() => removeMeasurement(i)}
-                    >
-                      ×
-                    </button>
-                  </td>
+        <button
+          className="flex items-center gap-1 text-xs font-semibold text-stone-400 hover:text-stone-200 uppercase tracking-wider"
+          onClick={() => setShowMeasurements((v) => !v)}
+        >
+          <span>{showMeasurements ? '▾' : '▸'}</span>
+          Measurement equations y = h(x)
+        </button>
+
+        {showMeasurements && (
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-stone-500">
+              Leave empty for full state observation (y = x). Otherwise define each output below.
+            </p>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-stone-500">
+                  <th className="text-left pb-1 w-1/3">Name</th>
+                  <th className="text-left pb-1">h(x)</th>
+                  <th className="pb-1 w-6" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.measurementExpressions.map((expr, i) => (
+                  <tr key={i} className="group">
+                    <td className="pr-1 pb-1">
+                      <input
+                        className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white text-xs"
+                        placeholder="y1"
+                        value={data.measurementNames[i]?.name ?? ''}
+                        onChange={(e) => setMeasurement(i, e.target.value, expr)}
+                      />
+                    </td>
+                    <td className="pr-1 pb-1">
+                      <input
+                        className="w-full bg-stone-700 border border-stone-600 rounded px-1.5 py-0.5 text-white font-mono text-xs"
+                        placeholder="x1 + x2"
+                        value={expr}
+                        onChange={(e) => setMeasurement(i, data.measurementNames[i]?.name ?? '', e.target.value)}
+                      />
+                    </td>
+                    <td className="pb-1 text-center">
+                      <button
+                        className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400"
+                        onClick={() => removeMeasurement(i)}
+                      >×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button className="text-xs text-rose-400 hover:text-rose-300" onClick={addMeasurement}>
+              + Add measurement
+            </button>
+          </div>
         )}
       </section>
 

@@ -1,5 +1,5 @@
 import { useDiagramStore } from '../store/diagramStore';
-import type { MheBlockData, ModelBlockData } from '../types/blocks';
+import type { MheBlockData, ModelBlockData, DataBlockData, PlantBlockData } from '../types/blocks';
 
 interface Props {
   nodeId: string;
@@ -46,6 +46,12 @@ export function MhePanel({ nodeId }: Props) {
   const modelNode = modelEdge ? nodes.find((n) => n.id === modelEdge.source) : undefined;
   const modelData = modelNode?.data.blockType === 'model' ? (modelNode.data as ModelBlockData) : null;
 
+  // Find connected data source (Data block or Plant block)
+  const dataEdge = edges.find((e) => e.target === nodeId && e.targetHandle === 'mhe-data-in');
+  const dataSourceNode = dataEdge ? nodes.find((n) => n.id === dataEdge.source) : undefined;
+  const dataBlock = dataSourceNode?.data.blockType === 'data' ? (dataSourceNode.data as DataBlockData) : null;
+  const plantBlock = dataSourceNode?.data.blockType === 'plant' ? (dataSourceNode.data as PlantBlockData) : null;
+
   const stateNames = modelData?.states.map((s) => s.name) ?? [];
   const measNames = modelData?.measurementNames.map((m) => m.name) ?? [];
 
@@ -82,16 +88,51 @@ export function MhePanel({ nodeId }: Props) {
         </p>
       ) : measNames.length === 0 ? (
         <div className="rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          The connected Model has no measurement equations h(x). Add them in the Model config panel.
+          The connected Model has no measurement equations h(x). Open the Model config and expand
+          "▸ Measurement equations y = h(x)" to add them.
         </div>
       ) : (
-        <div className="rounded bg-stone-800 border border-stone-700 px-3 py-2 text-xs text-stone-400">
-          Model: <span className="text-white">{modelData.label}</span>
-          <br />
-          States: <span className="text-white font-mono">{stateNames.join(', ')}</span>
-          <br />
-          Measurements: <span className="text-white font-mono">{measNames.join(', ')}</span>
+        <div className="rounded bg-stone-800 border border-stone-700 px-3 py-2 text-xs text-stone-400 space-y-0.5">
+          <div>Model: <span className="text-white">{modelData.label}</span></div>
+          <div>States: <span className="text-white font-mono">{stateNames.join(', ')}</span></div>
+          <div>Measurements: <span className="text-white font-mono">{measNames.join(', ')}</span></div>
         </div>
+      )}
+
+      {/* Connected data source info */}
+      {dataBlock && (
+        <div className="rounded bg-stone-800 border border-stone-700 px-3 py-2 text-xs text-stone-400 space-y-0.5">
+          <div>Data: <span className="text-white">{dataBlock.label}</span>
+            {' '}<span className="text-stone-500">({dataBlock.rowCount} rows)</span>
+          </div>
+          <div>Y cols: <span className="text-white font-mono">{dataBlock.outputCols.join(', ') || '—'}</span></div>
+          {dataBlock.inputCols.length > 0 && (
+            <div>U cols: <span className="text-white font-mono">{dataBlock.inputCols.join(', ')}</span></div>
+          )}
+        </div>
+      )}
+      {plantBlock && (
+        <div className="rounded bg-stone-800 border border-teal-700 px-3 py-2 text-xs text-stone-400 space-y-0.5">
+          <div>Plant: <span className="text-white">{plantBlock.label}</span>
+            <span className="text-stone-500"> (from MPC run)</span>
+          </div>
+          <div>
+            Measurements:{' '}
+            <span className="text-white font-mono">
+              {plantBlock.measurementNames.length > 0
+                ? plantBlock.measurementNames.map((m) => m.name).join(', ')
+                : plantBlock.states.map((s) => s.name).join(', ') + ' (full state)'}
+            </span>
+          </div>
+          {plantBlock.inputs.length > 0 && (
+            <div>Inputs: <span className="text-white font-mono">{plantBlock.inputs.map((i) => i.name).join(', ')}</span></div>
+          )}
+        </div>
+      )}
+      {!dataBlock && !plantBlock && (
+        <p className="text-xs text-stone-500 italic">
+          Connect a Data block or Plant block to mhe-data-in
+        </p>
       )}
 
       {/* Horizon & dt */}
