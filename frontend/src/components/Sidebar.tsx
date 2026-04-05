@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { BlockType } from '../types/blocks';
+import { useFavouritesStore } from '../store/favouritesStore';
 
 interface BlockDef {
   type: BlockType;
@@ -12,7 +14,7 @@ const BLOCKS: BlockDef[] = [
   {
     type: 'model',
     label: 'Model',
-    description: 'Define system dynamics (states, inputs, ODEs)',
+    description: 'Define continuous system dynamics (states, inputs, ODEs)',
     color: 'border-rose-700 bg-stone-800 hover:border-rose-500',
     headerColor: 'bg-rose-700',
   },
@@ -74,38 +76,93 @@ const BLOCKS: BlockDef[] = [
   },
 ];
 
+function StarButton({ type }: { type: BlockType }) {
+  const { has, toggle } = useFavouritesStore();
+  const starred = has(type);
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); toggle(type); }}
+      onMouseDown={(e) => e.stopPropagation()} // prevent drag triggering
+      title={starred ? 'Remove from favourites' : 'Add to favourites'}
+      className={`shrink-0 text-sm leading-none transition-colors px-1 py-0.5 rounded hover:bg-black/20 ${
+        starred ? 'text-amber-400' : 'text-stone-600 hover:text-stone-400'
+      }`}
+    >
+      {starred ? '★' : '☆'}
+    </button>
+  );
+}
+
+function BlockCard({ b, onDragStart }: { b: BlockDef; onDragStart: (e: React.DragEvent, t: BlockType) => void }) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, b.type)}
+      className={`rounded-lg border-2 cursor-grab active:cursor-grabbing select-none transition-colors overflow-hidden ${b.color}`}
+    >
+      <div className={`${b.headerColor} px-2 py-1 flex items-center justify-between gap-1`}>
+        <span className="text-xs font-bold text-white uppercase tracking-wider">{b.label}</span>
+        <StarButton type={b.type} />
+      </div>
+      <div className="px-2 py-1.5">
+        <p className="text-xs text-stone-400 leading-tight">{b.description}</p>
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'all' | 'favourites';
+
 export function Sidebar() {
+  const [tab, setTab] = useState<Tab>('all');
+  const { favourites } = useFavouritesStore();
+
   function onDragStart(event: React.DragEvent, type: BlockType) {
     event.dataTransfer.setData('application/hilo-block', type);
     event.dataTransfer.effectAllowed = 'move';
   }
 
+  const displayed = tab === 'all' ? BLOCKS : BLOCKS.filter((b) => favourites.includes(b.type));
+
   return (
     <aside className="w-52 shrink-0 bg-stone-900 border-r border-stone-700 flex flex-col overflow-y-auto">
-      <div className="px-3 py-3 border-b border-stone-700">
-        <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Block Palette</p>
-        <p className="text-xs text-stone-500 mt-0.5">Drag blocks onto the canvas</p>
-      </div>
-
-      <div className="flex flex-col gap-2 p-3">
-        {BLOCKS.map((b) => (
-          <div
-            key={b.type}
-            draggable
-            onDragStart={(e) => onDragStart(e, b.type)}
-            className={`rounded-lg border-2 cursor-grab active:cursor-grabbing select-none transition-colors overflow-hidden ${b.color}`}
+      {/* Tab strip */}
+      <div className="flex border-b border-stone-700 shrink-0">
+        {(['all', 'favourites'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-2 text-xs font-medium transition-colors ${
+              tab === t
+                ? 'text-stone-100 border-b-2 border-sky-500 bg-stone-900'
+                : 'text-stone-500 hover:text-stone-300 hover:bg-stone-800'
+            }`}
           >
-            <div className={`${b.headerColor} px-2 py-1`}>
-              <span className="text-xs font-bold text-white uppercase tracking-wider">{b.label}</span>
-            </div>
-            <div className="px-2 py-1.5">
-              <p className="text-xs text-stone-400 leading-tight">{b.description}</p>
-            </div>
-          </div>
+            {t === 'all' ? 'Blocks' : (
+              <span className="flex items-center justify-center gap-1">
+                <span className="text-amber-400">★</span> Favourites
+              </span>
+            )}
+          </button>
         ))}
       </div>
 
-      <div className="mt-auto px-3 py-3 border-t border-stone-700">
+      {/* Block list */}
+      <div className="flex flex-col gap-2 p-3 flex-1">
+        {displayed.length === 0 ? (
+          <div className="text-xs text-stone-600 text-center mt-6 px-2 leading-relaxed">
+            No favourites yet.<br />
+            Click the <span className="text-stone-400">☆</span> on any block to add it here.
+          </div>
+        ) : (
+          displayed.map((b) => (
+            <BlockCard key={b.type} b={b} onDragStart={onDragStart} />
+          ))
+        )}
+      </div>
+
+      <div className="px-3 py-2 border-t border-stone-700 shrink-0">
         <p className="text-xs text-stone-600">Stage 4 — ML</p>
       </div>
     </aside>
