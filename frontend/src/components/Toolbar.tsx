@@ -1,9 +1,5 @@
-import { useState } from 'react';
 import { useSimulationStore } from '../store/simulationStore';
-import { useDiagramStore } from '../store/diagramStore';
-import { useProjectStore } from '../store/projectStore';
-import { useUIStore, type EdgeVariant } from '../store/uiStore';
-import { useDiagramPersist } from '../hooks/useDiagramPersist';
+import { useUIStore } from '../store/uiStore';
 
 interface Props {
   projectName: string;
@@ -11,46 +7,31 @@ interface Props {
 }
 
 export function Toolbar({ projectName, onBack }: Props) {
-  const { currentProjectId, saveDiagram } = useProjectStore();
-  const queue = useSimulationStore((s) => s.queue);
   const activeNodeId = useSimulationStore((s) => s.activeNodeId);
-  const edgeVariant = useUIStore((s) => s.edgeVariant);
-  const setEdgeVariant = useUIStore((s) => s.setEdgeVariant);
-  const { exportFile, importFile } = useDiagramPersist();
-  const [savedVisible, setSavedVisible] = useState(false);
-
-  function handleSave() {
-    if (!currentProjectId) return;
-    const { nodes, edges } = useDiagramStore.getState();
-    saveDiagram(currentProjectId, nodes, edges);
-    setSavedVisible(true);
-    setTimeout(() => setSavedVisible(false), 2000);
-  }
+  const queue = useSimulationStore((s) => s.queue);
+  const savedFlash = useUIStore((s) => s.savedFlash);
 
   const runningCount = activeNodeId ? 1 + queue.length : 0;
 
   return (
-    <header className="h-12 bg-stone-900 border-b border-stone-700 flex items-center px-4 gap-3 shrink-0">
-      {/* Back to projects */}
+    <header className="h-10 bg-stone-900 border-b border-stone-800 flex items-center px-4 gap-3 shrink-0">
       <button
         onClick={onBack}
         className="flex items-center gap-1 text-stone-400 hover:text-stone-100 text-xs transition-colors"
-        title="Save and go back to projects"
+        title="Back to projects"
       >
         ← Projects
       </button>
 
-      <div className="w-px h-6 bg-stone-700" />
+      <div className="w-px h-5 bg-stone-700" />
 
-      {/* Project name */}
-      <span className="text-stone-300 text-sm font-medium truncate max-w-[160px]" title={projectName}>
+      <span className="text-stone-300 text-sm font-medium truncate max-w-[200px]" title={projectName}>
         {projectName}
       </span>
 
-      {/* Queue indicator */}
       {runningCount > 0 && (
         <>
-          <div className="w-px h-6 bg-stone-700" />
+          <div className="w-px h-5 bg-stone-700" />
           <span className="text-xs text-amber-400 animate-pulse">
             {runningCount === 1 ? '1 simulation running' : `${runningCount} simulations running`}
           </span>
@@ -59,55 +40,9 @@ export function Toolbar({ projectName, onBack }: Props) {
 
       <div className="flex-1" />
 
-      {/* Edge style toggle */}
-      <div className="flex items-center gap-0.5 bg-stone-800 rounded px-1 py-0.5">
-        {(['bezier', 'straight', 'rounded'] as EdgeVariant[]).map((v) => (
-          <button
-            key={v}
-            onClick={() => setEdgeVariant(v)}
-            className={`px-2 py-0.5 rounded text-xs transition-colors ${
-              edgeVariant === v
-                ? 'bg-stone-600 text-white'
-                : 'text-stone-500 hover:text-stone-300'
-            }`}
-            title={v === 'bezier' ? 'Curved edges' : v === 'straight' ? 'Straight edges' : 'Rounded step edges'}
-          >
-            {v === 'bezier' ? '~' : v === 'straight' ? '/' : '⌐'}
-          </button>
-        ))}
-      </div>
-
-      {/* Save to project */}
-      {savedVisible && (
-        <span className="text-xs text-green-400 transition-opacity">
-          Project saved
-        </span>
+      {savedFlash && (
+        <span className="text-xs text-green-400 transition-opacity">Saved</span>
       )}
-      <button
-        onClick={handleSave}
-        className="px-2.5 py-1.5 rounded text-xs text-stone-300 hover:text-white hover:bg-stone-700 transition-colors"
-        title="Save to project"
-      >
-        Save
-      </button>
-
-      <div className="w-px h-6 bg-stone-700" />
-
-      {/* File import / export */}
-      <button
-        onClick={importFile}
-        className="px-2.5 py-1.5 rounded text-xs text-stone-500 hover:text-stone-300 hover:bg-stone-700 transition-colors"
-        title="Import .hilo file"
-      >
-        Import
-      </button>
-      <button
-        onClick={exportFile}
-        className="px-2.5 py-1.5 rounded text-xs text-stone-500 hover:text-stone-300 hover:bg-stone-700 transition-colors"
-        title="Export .hilo file"
-      >
-        Export
-      </button>
     </header>
   );
 }

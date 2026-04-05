@@ -13,4 +13,5 @@ export interface DiagramSchema {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   viewport?: Viewport;
+  filePath?: string;
 }

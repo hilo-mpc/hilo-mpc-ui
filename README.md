@@ -14,19 +14,27 @@ Drag a **Model** block, a **Simulation** block, and a **Plot** block onto the ca
 
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+python3 -m venv .venv
+.venv/bin/pip install setuptools   # required: distutils removed in Python 3.12
+.venv/bin/pip install -r requirements.txt
 
-# Start the backend manually (dev mode):
-uvicorn main:app --host 127.0.0.1 --port 8765 --reload
+# Start the backend (dev mode):
+.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8765 --reload
 ```
+
+Health check: `curl http://127.0.0.1:8765/health`
 
 ### 2. Frontend (browser dev mode)
 
+Node.js is managed via micromamba — `npm` is not available system-wide.
+
 ```bash
-npm install              # from repo root
-npm run dev:frontend     # starts Vite at http://localhost:5173
+# One-time setup (if nodeenv doesn't exist):
+micromamba create -y -n nodeenv -c conda-forge nodejs
+
+# From repo root:
+micromamba run -n nodeenv npm install
+micromamba run -n nodeenv npm run dev --workspace=frontend
 ```
 
 Open `http://localhost:5173` in your browser.
@@ -36,7 +44,7 @@ Open `http://localhost:5173` in your browser.
 Make sure the Python backend is already running, then:
 
 ```bash
-npm run dev              # starts both Vite and Electron
+micromamba run -n nodeenv npm run dev   # starts both Vite and Electron
 ```
 
 ---

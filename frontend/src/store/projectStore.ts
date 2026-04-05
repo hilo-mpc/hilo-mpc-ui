@@ -17,6 +17,7 @@ interface ProjectStore {
   deleteProject: (id: string) => void;
   renameProject: (id: string, name: string) => void;
   saveDiagram: (id: string, nodes: DiagramNode[], edges: DiagramEdge[], viewport?: Viewport) => void;
+  setProjectFilePath: (id: string, filePath: string) => void;
 }
 
 export const useProjectStore = create<ProjectStore>()(
@@ -73,6 +74,14 @@ export const useProjectStore = create<ProjectStore>()(
               ...(viewport ? { viewport } : {}),
               updatedAt: new Date().toISOString(),
             },
+          },
+        })),
+
+      setProjectFilePath: (id, filePath) =>
+        set((s) => ({
+          projects: {
+            ...s.projects,
+            [id]: { ...s.projects[id], filePath },
           },
         })),
     }),

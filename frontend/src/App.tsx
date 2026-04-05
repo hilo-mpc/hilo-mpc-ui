@@ -3,6 +3,7 @@ import { Canvas } from './components/Canvas';
 import { Sidebar } from './components/Sidebar';
 import { ConfigPanel } from './components/ConfigPanel';
 import { Toolbar } from './components/Toolbar';
+import { MenuBar } from './components/MenuBar';
 import { StatusBar } from './components/StatusBar';
 import { Terminal } from './components/Terminal';
 import { LandingPage } from './components/LandingPage';
@@ -44,6 +45,7 @@ export default function App() {
     <ReactFlowProvider>
       <div className="flex flex-col h-screen bg-stone-950 text-white overflow-hidden">
         <Toolbar projectName={projectName} onBack={handleCloseProject} />
+        <MenuBar onBack={handleCloseProject} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <Canvas />
