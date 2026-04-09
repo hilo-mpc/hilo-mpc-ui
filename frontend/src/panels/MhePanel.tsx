@@ -57,7 +57,7 @@ export function MhePanel({ nodeId }: Props) {
 
   function patch(partial: Partial<MheBlockData>) {
     const next = { ...data, ...partial };
-    const configured = next.horizon > 0 && next.dt > 0;
+    const configured = next.horizon > 0 && next.dt > 0 && (next.tEnd ?? 10) > 0;
     updateNodeData(nodeId, { ...partial, configured });
   }
 
@@ -114,7 +114,7 @@ export function MhePanel({ nodeId }: Props) {
       {plantBlock && (
         <div className="rounded bg-stone-800 border border-teal-700 px-3 py-2 text-xs text-stone-400 space-y-0.5">
           <div>Plant: <span className="text-white">{plantBlock.label}</span>
-            <span className="text-stone-500"> (from MPC run)</span>
+            <span className="text-stone-500"> (standalone simulation)</span>
           </div>
           <div>
             Measurements:{' '}
@@ -135,8 +135,8 @@ export function MhePanel({ nodeId }: Props) {
         </p>
       )}
 
-      {/* Horizon & dt */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Horizon, dt, T end */}
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs text-stone-400 mb-1">Horizon N</label>
           <input
@@ -161,6 +161,20 @@ export function MhePanel({ nodeId }: Props) {
             onBlur={(e) => {
               const v = parseFloat(e.target.value);
               if (v > 0) patch({ dt: v });
+            }}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-stone-400 mb-1">T end (s)</label>
+          <input
+            type="number"
+            step="any"
+            min={0}
+            className="w-full bg-stone-700 border border-stone-600 rounded px-2 py-1 text-white"
+            defaultValue={data.tEnd ?? 10}
+            onBlur={(e) => {
+              const v = parseFloat(e.target.value);
+              if (v > 0) patch({ tEnd: v });
             }}
           />
         </div>

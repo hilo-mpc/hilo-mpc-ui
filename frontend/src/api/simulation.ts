@@ -250,6 +250,7 @@ interface BackendMheBlock {
   block_id: string;
   horizon: number;
   dt: number;
+  t_end: number;
   process_noise: Record<string, number>;
   measurement_noise: Record<string, number>;
   arrival_cost: Record<string, number>;
@@ -262,13 +263,39 @@ interface MheRequest {
     measurement_expressions: string[];
     measurement_names: string[];
   };
-  data_block: {
+  data_block?: {
     block_id: string;
     csv_content: string;
     input_cols: string[];
     output_cols: string[];
   };
+  plant_block?: BackendPlantBlock;
   mhe_block: BackendMheBlock;
+}
+
+function serializeMheBlock(mhe: MheBlockData): BackendMheBlock {
+  return {
+    block_id: mhe.label,
+    horizon: mhe.horizon,
+    dt: mhe.dt,
+    t_end: mhe.tEnd,
+    process_noise: mhe.processNoise,
+    measurement_noise: mhe.measurementNoise,
+    arrival_cost: mhe.arrivalCost,
+    initial_guess: mhe.initialGuess,
+  };
+}
+
+function serializeMheModelBlock(model: ModelBlockData) {
+  return {
+    block_id: 'model',
+    states: model.states,
+    inputs: model.inputs,
+    parameters: model.parameters.map((p) => ({ name: p.name, value: p.value })),
+    ode_expressions: model.odeExpressions,
+    measurement_expressions: model.measurementExpressions,
+    measurement_names: model.measurementNames.map((m) => m.name),
+  };
 }
 
 export function buildMheRequest(
@@ -279,30 +306,36 @@ export function buildMheRequest(
 ): MheRequest {
   return {
     diagram_id: diagramId,
-    model_block: {
-      block_id: 'model',
-      states: model.states,
-      inputs: model.inputs,
-      parameters: model.parameters.map((p) => ({ name: p.name, value: p.value })),
-      ode_expressions: model.odeExpressions,
-      measurement_expressions: model.measurementExpressions,
-      measurement_names: model.measurementNames.map((m) => m.name),
-    },
+    model_block: serializeMheModelBlock(model),
     data_block: {
       block_id: data.label,
       csv_content: data.csvContent,
       input_cols: data.inputCols,
       output_cols: data.outputCols,
     },
-    mhe_block: {
-      block_id: mhe.label,
-      horizon: mhe.horizon,
-      dt: mhe.dt,
-      process_noise: mhe.processNoise,
-      measurement_noise: mhe.measurementNoise,
-      arrival_cost: mhe.arrivalCost,
-      initial_guess: mhe.initialGuess,
+    mhe_block: serializeMheBlock(mhe),
+  };
+}
+
+export function buildMheWithPlantRequest(
+  diagramId: string,
+  model: ModelBlockData,
+  plant: PlantBlockData,
+  mhe: MheBlockData,
+): MheRequest {
+  return {
+    diagram_id: diagramId,
+    model_block: serializeMheModelBlock(model),
+    plant_block: {
+      block_id: 'plant',
+      states: plant.states,
+      inputs: plant.inputs,
+      parameters: plant.parameters.map((p) => ({ name: p.name, value: p.value })),
+      ode_expressions: plant.odeExpressions,
+      measurement_expressions: plant.measurementExpressions,
+      measurement_names: plant.measurementNames.map((m) => m.name),
     },
+    mhe_block: serializeMheBlock(mhe),
   };
 }
 

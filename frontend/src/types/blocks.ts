@@ -144,6 +144,7 @@ export interface MheBlockData {
   label: string;
   horizon: number;
   dt: number;
+  tEnd: number;                             // simulation duration (standalone plant mode)
   processNoise: Record<string, number>;     // state name → Q weight
   measurementNoise: Record<string, number>; // meas name → R weight
   arrivalCost: Record<string, number>;      // state name → P0 weight
@@ -206,6 +207,7 @@ export function defaultMheData(): MheBlockData {
     label: 'MHE',
     horizon: 10,
     dt: 0.1,
+    tEnd: 10,
     processNoise: {},
     measurementNoise: {},
     arrivalCost: {},

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useDiagramStore } from '../store/diagramStore';
 import { useSimulationStore } from '../store/simulationStore';
-import { buildMheRequest, postMhe, deleteMhe } from '../api/simulation';
+import { buildMheRequest, buildMheWithPlantRequest, postMhe, deleteMhe } from '../api/simulation';
 import { SimulationWebSocket } from '../api/websocket';
 import type { ModelBlockData, DataBlockData, MheBlockData, PlantBlockData } from '../types/blocks';
 import type { TimeSeriesPoint } from '../types/simulation';
@@ -88,48 +88,86 @@ export function useMhe(nodeId: string) {
         };
 
       } else if (dataSourceNode?.data.blockType === 'plant') {
-        // ── Case 2: Plant block (use its MPC simulation series) ────────────
         const plantBlock = dataSourceNode.data as PlantBlockData;
 
-        // Find the MPC node that drives this plant (plant-measurement-out → mpc-measurement-in)
+        // Check if this Plant is part of an MPC loop (plant-measurement-out → mpc-measurement-in)
         const mpcMeasEdge = edges.find(
           (e) => e.source === dataSourceNode.id && e.sourceHandle === 'plant-measurement-out'
         );
-        const mpcNodeId = mpcMeasEdge?.target ?? null;
-        const runs = useSimulationStore.getState().runs;
-        const plantSeries = mpcNodeId ? (runs[mpcNodeId]?.series ?? []) : [];
 
-        if (plantSeries.length === 0) {
-          useSimulationStore.getState().failRun(
+        if (mpcMeasEdge) {
+          // ── Case 2a: MPC-in-loop — use MPC run series as virtual CSV ──────
+          const mpcNodeId = mpcMeasEdge.target;
+          const runs = useSimulationStore.getState().runs;
+          const plantSeries = runs[mpcNodeId]?.series ?? [];
+
+          if (plantSeries.length === 0) {
+            useSimulationStore.getState().failRun(
+              nodeId,
+              'No simulation data from the Plant yet. Run the MPC simulation first.'
+            );
+            return;
+          }
+
+          const measCols =
+            plantBlock.measurementNames.length > 0
+              ? plantBlock.measurementNames.map((m) => m.name).filter(Boolean)
+              : plantBlock.states.map((s) => s.name);
+
+          const inputCols = plantBlock.inputs.map((i) => i.name);
+
+          if (measCols.length !== modelBlock.measurementExpressions.length) {
+            useSimulationStore.getState().failRun(
+              nodeId,
+              `Plant has ${measCols.length} measurement(s) but Model has ${modelBlock.measurementExpressions.length} measurement equation(s). They must match.`
+            );
+            return;
+          }
+
+          const allCols = [...measCols, ...inputCols];
+          virtualData = {
+            csvContent: seriesToCsv(plantSeries, allCols),
+            inputCols: inputCols,
+            outputCols: measCols,
+          };
+
+        } else {
+          // ── Case 2b: Standalone — simulate plant + estimate in backend ─────
+          const req = buildMheWithPlantRequest(
             nodeId,
-            'No simulation data from the Plant yet. Run the MPC simulation first.'
+            modelBlock,
+            plantBlock,
+            mheData
           );
-          return;
-        }
 
-        // Measurement columns: custom names if defined, otherwise all state names (full state obs)
-        const measCols =
-          plantBlock.measurementNames.length > 0
-            ? plantBlock.measurementNames.map((m) => m.name).filter(Boolean)
-            : plantBlock.states.map((s) => s.name);
+          let runId: string;
+          try {
+            runId = await postMhe(req);
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to start MHE.';
+            useSimulationStore.getState().failRun(nodeId, msg);
+            return;
+          }
 
-        // Input columns from plant inputs
-        const inputCols = plantBlock.inputs.map((i) => i.name);
-
-        if (measCols.length !== modelBlock.measurementExpressions.length) {
-          useSimulationStore.getState().failRun(
-            nodeId,
-            `Plant has ${measCols.length} measurement(s) but Model has ${modelBlock.measurementExpressions.length} measurement equation(s). They must match.`
+          useSimulationStore.getState().setRunId(nodeId, runId);
+          wsRef.current?.close();
+          wsRef.current = new SimulationWebSocket(
+            runId,
+            (frame) => {
+              if (frame.type === 'step') {
+                useSimulationStore.getState().appendPoint(nodeId, { t: frame.t, values: frame.values });
+              } else if (frame.type === 'complete') {
+                useSimulationStore.getState().completeRun(nodeId, frame.elapsed_seconds);
+              } else if (frame.type === 'error') {
+                useSimulationStore.getState().failRun(nodeId, frame.message);
+              }
+            },
+            () => {},
+            'mhe'
           );
-          return;
+          wsRef.current.connect();
+          return; // request already sent
         }
-
-        const allCols = [...measCols, ...inputCols];
-        virtualData = {
-          csvContent: seriesToCsv(plantSeries, allCols),
-          inputCols: inputCols,
-          outputCols: measCols,
-        };
 
       } else {
         useSimulationStore.getState().failRun(
