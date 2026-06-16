@@ -3,6 +3,32 @@ import { useProjectStore } from '../store/projectStore';
 import { useBackendHealth } from '../hooks/useBackendHealth';
 import type { DiagramSchema } from '../types/diagram';
 
+async function pickFile(): Promise<{ json: string; filePath: string | null } | null> {
+  if ((window as any).electronAPI?.openFileWithPath) {
+    const result = await (window as any).electronAPI.openFileWithPath();
+    if (!result) return null;
+    return { json: result.content, filePath: result.filePath };
+  }
+  if ((window as any).electronAPI?.openFile) {
+    const json = await (window as any).electronAPI.openFile();
+    if (!json) return null;
+    return { json, filePath: null };
+  }
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.hilo,application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve({ json: reader.result as string, filePath: null });
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
+
 interface Props {
   onOpen: (id: string) => void;
 }
@@ -89,11 +115,24 @@ function ProjectCard({
 }
 
 export function LandingPage({ onOpen }: Props) {
-  const { projects, createProject, deleteProject, renameProject } = useProjectStore();
+  const { projects, createProject, importProject, deleteProject, renameProject, setProjectFilePath } = useProjectStore();
   const { status: health, hiloVersion } = useBackendHealth();
 
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+
+  async function handleLoadFromFile() {
+    const picked = await pickFile();
+    if (!picked) return;
+    try {
+      const schema: DiagramSchema = JSON.parse(picked.json);
+      const id = importProject(schema);
+      if (picked.filePath) setProjectFilePath(id, picked.filePath);
+      onOpen(id);
+    } catch {
+      // ignore malformed files
+    }
+  }
 
   const sorted = Object.values(projects).sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -149,12 +188,20 @@ export function LandingPage({ onOpen }: Props) {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setCreating(true)}
-                className="px-4 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition-colors"
-              >
-                + New Project
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleLoadFromFile}
+                  className="px-4 py-2 rounded border border-stone-600 hover:border-stone-400 text-stone-300 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Open file…
+                </button>
+                <button
+                  onClick={() => setCreating(true)}
+                  className="px-4 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition-colors"
+                >
+                  + New Project
+                </button>
+              </div>
             )}
           </div>
 
