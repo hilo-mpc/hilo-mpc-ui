@@ -2,6 +2,47 @@ import { useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useBackendHealth } from '../hooks/useBackendHealth';
 import type { DiagramSchema } from '../types/diagram';
+import { setHandle, hasFileSystemAccess } from '../lib/fileHandles';
+
+type PickResult = { json: string; filePath: string | null; handle?: FileSystemFileHandle };
+
+async function pickFile(): Promise<PickResult | null> {
+  if ((window as any).electronAPI?.openFileWithPath) {
+    const result = await (window as any).electronAPI.openFileWithPath();
+    if (!result) return null;
+    return { json: result.content, filePath: result.filePath };
+  }
+  if ((window as any).electronAPI?.openFile) {
+    const json = await (window as any).electronAPI.openFile();
+    if (!json) return null;
+    return { json, filePath: null };
+  }
+  if (hasFileSystemAccess()) {
+    try {
+      const [handle]: FileSystemFileHandle[] = await (window as any).showOpenFilePicker({
+        types: [{ description: 'HILO Diagram', accept: { 'application/json': ['.hilo'] } }],
+      });
+      const file = await handle.getFile();
+      const json = await file.text();
+      return { json, filePath: null, handle };
+    } catch {
+      return null;
+    }
+  }
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.hilo,application/json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve({ json: reader.result as string, filePath: null });
+      reader.readAsText(file);
+    };
+    input.click();
+  });
+}
 
 interface Props {
   onOpen: (id: string) => void;
@@ -89,11 +130,25 @@ function ProjectCard({
 }
 
 export function LandingPage({ onOpen }: Props) {
-  const { projects, createProject, deleteProject, renameProject } = useProjectStore();
+  const { projects, createProject, importProject, deleteProject, renameProject, setProjectFilePath } = useProjectStore();
   const { status: health, hiloVersion } = useBackendHealth();
 
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+
+  async function handleLoadFromFile() {
+    const picked = await pickFile();
+    if (!picked) return;
+    try {
+      const schema: DiagramSchema = JSON.parse(picked.json);
+      const id = importProject(schema);
+      if (picked.filePath) setProjectFilePath(id, picked.filePath);
+      if (picked.handle) setHandle(id, picked.handle);
+      onOpen(id);
+    } catch {
+      // ignore malformed files
+    }
+  }
 
   const sorted = Object.values(projects).sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -149,12 +204,20 @@ export function LandingPage({ onOpen }: Props) {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setCreating(true)}
-                className="px-4 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition-colors"
-              >
-                + New Project
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleLoadFromFile}
+                  className="px-4 py-2 rounded border border-stone-600 hover:border-stone-400 text-stone-300 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Open file…
+                </button>
+                <button
+                  onClick={() => setCreating(true)}
+                  className="px-4 py-2 rounded bg-rose-600 hover:bg-rose-500 text-white text-sm font-medium transition-colors"
+                >
+                  + New Project
+                </button>
+              </div>
             )}
           </div>
 

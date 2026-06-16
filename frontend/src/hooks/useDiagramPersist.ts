@@ -4,6 +4,7 @@ import { useProjectStore } from '../store/projectStore';
 import { useUIStore } from '../store/uiStore';
 import { useReactFlow } from '@xyflow/react';
 import type { DiagramSchema } from '../types/diagram';
+import { getHandle, setHandle, hasFileSystemAccess } from '../lib/fileHandles';
 
 function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -17,6 +18,23 @@ function downloadJson(json: string, filename: string) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function writeToHandle(handle: FileSystemFileHandle, json: string): Promise<void> {
+  const writable = await handle.createWritable();
+  await writable.write(json);
+  await writable.close();
+}
+
+async function pickSaveHandle(filename: string): Promise<FileSystemFileHandle | null> {
+  try {
+    return await (window as any).showSaveFilePicker({
+      suggestedName: filename,
+      types: [{ description: 'HILO Diagram', accept: { 'application/json': ['.hilo'] } }],
+    });
+  } catch {
+    return null;
+  }
 }
 
 function buildSchema(name: string, id: string, viewport: ReturnType<ReturnType<typeof useReactFlow>['getViewport']>): DiagramSchema {
@@ -62,7 +80,7 @@ export function useDiagramPersist() {
     return () => clearInterval(id);
   }, [currentProjectId, getViewport]);
 
-  // Save to file (uses known path if set, otherwise asks)
+  // Save to file (reuses existing handle/path; prompts only on first save)
   const saveFile = useCallback(async () => {
     if (!currentProjectId) return;
     const project = useProjectStore.getState().projects[currentProjectId];
@@ -72,25 +90,33 @@ export function useDiagramPersist() {
 
     const schema = buildSchema(project?.name ?? 'diagram', currentProjectId, vp);
     const json = JSON.stringify(schema, null, 2);
+    const filename = `${project?.name ?? 'diagram'}.hilo`;
 
     if ((window as any).electronAPI) {
       if (project?.filePath) {
         await (window as any).electronAPI.saveFileTo(project.filePath, json);
-        flashSaved();
       } else {
         const path = await (window as any).electronAPI.saveFile(json);
-        if (path) {
-          setProjectFilePath(currentProjectId, path);
-          flashSaved();
-        }
+        if (path) setProjectFilePath(currentProjectId, path);
+        else return;
       }
+      flashSaved();
+    } else if (hasFileSystemAccess()) {
+      let handle = getHandle(currentProjectId);
+      if (!handle) {
+        handle = await pickSaveHandle(filename);
+        if (!handle) return;
+        setHandle(currentProjectId, handle);
+      }
+      await writeToHandle(handle, json);
+      flashSaved();
     } else {
-      downloadJson(json, `${project?.name ?? 'diagram'}.hilo`);
+      downloadJson(json, filename);
       flashSaved();
     }
   }, [currentProjectId, saveDiagram, getViewport, setProjectFilePath]);
 
-  // Save As — always asks for a new location
+  // Save As — always prompts for a new location
   const saveFileAs = useCallback(async () => {
     if (!currentProjectId) return;
     const project = useProjectStore.getState().projects[currentProjectId];
@@ -100,15 +126,19 @@ export function useDiagramPersist() {
 
     const schema = buildSchema(project?.name ?? 'diagram', currentProjectId, vp);
     const json = JSON.stringify(schema, null, 2);
+    const filename = `${project?.name ?? 'diagram'}.hilo`;
 
     if ((window as any).electronAPI) {
       const path = await (window as any).electronAPI.saveFile(json);
-      if (path) {
-        setProjectFilePath(currentProjectId, path);
-        flashSaved();
-      }
+      if (path) { setProjectFilePath(currentProjectId, path); flashSaved(); }
+    } else if (hasFileSystemAccess()) {
+      const handle = await pickSaveHandle(filename);
+      if (!handle) return;
+      setHandle(currentProjectId, handle);
+      await writeToHandle(handle, json);
+      flashSaved();
     } else {
-      downloadJson(json, `${project?.name ?? 'diagram'}.hilo`);
+      downloadJson(json, filename);
       flashSaved();
     }
   }, [currentProjectId, saveDiagram, getViewport, setProjectFilePath]);
@@ -126,6 +156,18 @@ export function useDiagramPersist() {
       filePath = result.filePath;
     } else if ((window as any).electronAPI) {
       json = await (window as any).electronAPI.openFile();
+    } else if (hasFileSystemAccess()) {
+      try {
+        const [handle]: FileSystemFileHandle[] = await (window as any).showOpenFilePicker({
+          types: [{ description: 'HILO Diagram', accept: { 'application/json': ['.hilo'] } }],
+        });
+        const file = await handle.getFile();
+        json = await file.text();
+        // Reuse this handle for subsequent saves
+        setHandle(currentProjectId, handle as unknown as FileSystemFileHandle);
+      } catch {
+        return;
+      }
     } else {
       json = await new Promise<string | null>((resolve) => {
         const input = document.createElement('input');

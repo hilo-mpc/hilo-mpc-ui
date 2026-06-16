@@ -15,7 +15,7 @@ export default function App() {
   const { projects, currentProjectId, openProject, closeProject, saveDiagram } = useProjectStore();
 
   function handleOpenProject(id: string) {
-    const project = projects[id];
+    const project = useProjectStore.getState().projects[id];
     if (project) {
       useDiagramStore.getState().loadDiagram(project.nodes, project.edges);
     } else {

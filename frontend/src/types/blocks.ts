@@ -191,13 +191,13 @@ export function defaultModelData(): ModelBlockData {
   return {
     blockType: 'model',
     label: 'Model',
-    states: [],
-    inputs: [],
-    parameters: [],
-    odeExpressions: [],
-    measurementExpressions: [],
-    measurementNames: [],
-    configured: false,
+    states: [{ name: 'x' }],
+    inputs: [{ name: 'u' }],
+    parameters: [{ name: 'p', value: 1.0 }],
+    odeExpressions: ['p * u'],
+    measurementExpressions: ['x'],
+    measurementNames: [{ name: 'y' }],
+    configured: true,
   };
 }
 
@@ -253,13 +253,13 @@ export function defaultPlantData(): PlantBlockData {
   return {
     blockType: 'plant',
     label: 'Plant',
-    states: [],
-    inputs: [],
-    parameters: [],
-    odeExpressions: [],
-    measurementExpressions: [],
-    measurementNames: [],
-    configured: false,
+    states: [{ name: 'x' }],
+    inputs: [{ name: 'u' }],
+    parameters: [{ name: 'p', value: 1.0 }],
+    odeExpressions: ['p * u'],
+    measurementExpressions: ['x'],
+    measurementNames: [{ name: 'y' }],
+    configured: true,
   };
 }
 

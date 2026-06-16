@@ -12,6 +12,7 @@ interface ProjectStore {
   currentProjectId: string | null;
 
   createProject: (name: string) => string;
+  importProject: (schema: DiagramSchema) => string;
   openProject: (id: string) => void;
   closeProject: () => void;
   deleteProject: (id: string) => void;
@@ -39,6 +40,13 @@ export const useProjectStore = create<ProjectStore>()(
           edges: [],
         };
         set((s) => ({ projects: { ...s.projects, [id]: schema } }));
+        return id;
+      },
+
+      importProject: (schema) => {
+        const id = makeId();
+        const entry: DiagramSchema = { ...schema, id, updatedAt: new Date().toISOString() };
+        set((s) => ({ projects: { ...s.projects, [id]: entry } }));
         return id;
       },
 
