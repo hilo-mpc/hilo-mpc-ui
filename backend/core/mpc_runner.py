@@ -105,6 +105,8 @@ async def run_mpc(
     u0 = [0.0] * n_inputs
     nmpc.set_initial_guess(x0_pred, u0)
 
+    pred_param_values = [p.value for p in req.model_block.parameters if p.name.strip()]
+
     # ── 2. Build plant model ──────────────────────────────────────────────────
     plant_cfg = req.plant_block
     # Strip measurement expressions: we evaluate them ourselves via _build_measurement_fn,
@@ -140,7 +142,10 @@ async def run_mpc(
             y = y[:n_pred]
 
         # MPC optimisation
-        u_opt = nmpc.optimize(x0=y)
+        optimize_kwargs: dict = {"x0": y}
+        if pred_param_values:
+            optimize_kwargs["cp"] = pred_param_values
+        u_opt = nmpc.optimize(**optimize_kwargs)
         u_flat = list(np.array(u_opt).flatten())
         u_first = u_flat[:n_inputs]
 
