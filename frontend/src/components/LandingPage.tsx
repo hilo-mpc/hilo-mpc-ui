@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
 import { useBackendHealth } from '../hooks/useBackendHealth';
 import type { DiagramSchema } from '../types/diagram';
+import { setHandle, hasFileSystemAccess } from '../lib/fileHandles';
 
-async function pickFile(): Promise<{ json: string; filePath: string | null } | null> {
+type PickResult = { json: string; filePath: string | null; handle?: FileSystemFileHandle };
+
+async function pickFile(): Promise<PickResult | null> {
   if ((window as any).electronAPI?.openFileWithPath) {
     const result = await (window as any).electronAPI.openFileWithPath();
     if (!result) return null;
@@ -13,6 +16,18 @@ async function pickFile(): Promise<{ json: string; filePath: string | null } | n
     const json = await (window as any).electronAPI.openFile();
     if (!json) return null;
     return { json, filePath: null };
+  }
+  if (hasFileSystemAccess()) {
+    try {
+      const [handle]: FileSystemFileHandle[] = await (window as any).showOpenFilePicker({
+        types: [{ description: 'HILO Diagram', accept: { 'application/json': ['.hilo'] } }],
+      });
+      const file = await handle.getFile();
+      const json = await file.text();
+      return { json, filePath: null, handle };
+    } catch {
+      return null;
+    }
   }
   return new Promise((resolve) => {
     const input = document.createElement('input');
@@ -128,6 +143,7 @@ export function LandingPage({ onOpen }: Props) {
       const schema: DiagramSchema = JSON.parse(picked.json);
       const id = importProject(schema);
       if (picked.filePath) setProjectFilePath(id, picked.filePath);
+      if (picked.handle) setHandle(id, picked.handle);
       onOpen(id);
     } catch {
       // ignore malformed files
